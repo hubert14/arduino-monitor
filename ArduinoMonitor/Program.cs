@@ -11,7 +11,7 @@ namespace ArduinoMonitor
     {
         private const string COM_PORT = "COM5";
         private const int BAUD_RATE = 9600;
-        private static int _openPortDelay = 5000;
+        private static int _openPortDelayMilliseconds = 5 * 1000;
 
         public static readonly SerialPort ArduinoPort = new SerialPort(COM_PORT) {BaudRate = BAUD_RATE};
 
@@ -45,10 +45,10 @@ namespace ArduinoMonitor
                 catch (Exception e)
                 {
                     Console.WriteLine(e.Message);
-                    Console.WriteLine($"Next try to open Arduino port in {_openPortDelay / 1000} sec.");
-                    Task.Delay(_openPortDelay).Wait();
+                    Console.WriteLine($"Next try to open Arduino port in {_openPortDelayMilliseconds / 1000} sec.");
+                    Task.Delay(_openPortDelayMilliseconds).Wait();
 
-                    if (_openPortDelay < 60000) _openPortDelay += 2500;
+                    if (_openPortDelayMilliseconds < 240 * 1000) _openPortDelayMilliseconds += 5 * 1000;
                 }
             }
 

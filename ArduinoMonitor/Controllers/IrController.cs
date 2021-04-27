@@ -1,7 +1,4 @@
-﻿using System.IO.Ports;
-using OpenHardwareMonitor.Hardware;
-
-namespace ArduinoMonitor.Controllers
+﻿namespace ArduinoMonitor.Controllers
 {
     public static class IrCommands
     {
@@ -20,6 +17,12 @@ namespace ArduinoMonitor.Controllers
         public const string FOUR_COMMAND = "F708FF00";
         public const string FIVE_COMMAND = "E31CFF00";
         public const string SIX_COMMAND = "A55AFF00";
+        public const string SEVEN_COMMAND = "BD42FF00";
+        public const string EIGHT_COMMAND = "AD52FF00";
+        public const string NINE_COMMAND = "B54AFF00";
+
+        public const string PLUS_100_COMMAND = "E619FF00";
+        public const string PLUS_200_COMMAND = "F20DFF00";
 
         public const string PLAY_COMMAND = "BC43FF00";
         public const string PREV_COMMAND = "BB44FF00";
@@ -37,17 +40,17 @@ namespace ArduinoMonitor.Controllers
 
             switch (command)
             {
-                // GPU FAN
+                // FAN CONTROL
                 case IrCommands.CH_MINUS_COMMAND:
-                    FanController.ChangeGPUFan(FanOperation.Down);
+                    FanController.ChangeFan(FanOperation.Down);
                     break;
 
                 case IrCommands.CH_PLUS_COMMAND:
-                    FanController.ChangeGPUFan(FanOperation.Up);
+                    FanController.ChangeFan(FanOperation.Up);
                     break;
 
                 case IrCommands.CH_COMMAND:
-                    FanController.ChangeGPUFan(FanOperation.Default);
+                    FanController.ChangeFan(FanOperation.Default);
                     break;
 
                 // MEDIA
@@ -83,8 +86,26 @@ namespace ArduinoMonitor.Controllers
                 case IrCommands.THREE_COMMAND:
                     Program.Display.ChangeScreen(Screen.RAM);
                     break;
-                case IrCommands.FOUR_COMMAND:
+                case IrCommands.PLUS_100_COMMAND:
                     Program.Display.ChangeScreen(Screen.Weather);
+                    break;
+                case IrCommands.FOUR_COMMAND:
+                    Program.Display.ChangeScreen(Screen.FanCPU);
+                    break;
+                case IrCommands.FIVE_COMMAND:
+                    Program.Display.ChangeScreen(Screen.FanGPU);
+                    break;
+                case IrCommands.SIX_COMMAND:
+                    Program.Display.ChangeScreen(Screen.FanRear);
+                    break;
+                case IrCommands.SEVEN_COMMAND:
+                    Program.Display.ChangeScreen(Screen.FanFront1);
+                    break;
+                case IrCommands.EIGHT_COMMAND:
+                    Program.Display.ChangeScreen(Screen.FanFront2);
+                    break;
+                case IrCommands.NINE_COMMAND:
+                    Program.Display.ChangeScreen(Screen.FanFront3);
                     break;
             }
         }
