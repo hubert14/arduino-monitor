@@ -26,7 +26,7 @@ namespace ArduinoMonitor.Controllers
             var fan = gpu.Sensors.First(x => x.Identifier.ToString() == GPU_FAN_ID);
 
             var value = fan.Value.GetValueOrDefault(50);
-            var outputValue = string.Empty;
+            string outputValue;
 
             switch (operation)
             {
