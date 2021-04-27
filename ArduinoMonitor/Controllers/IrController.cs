@@ -1,7 +1,4 @@
-﻿using System.IO.Ports;
-using OpenHardwareMonitor.Hardware;
-
-namespace ArduinoMonitor.Controllers
+﻿namespace ArduinoMonitor.Controllers
 {
     public static class IrCommands
     {
@@ -43,17 +40,17 @@ namespace ArduinoMonitor.Controllers
 
             switch (command)
             {
-                // GPU FAN
+                // FAN CONTROL
                 case IrCommands.CH_MINUS_COMMAND:
-                    FanController.ChangeFan(FanType.GPU, FanOperation.Down);
+                    FanController.ChangeFan(FanOperation.Down);
                     break;
 
                 case IrCommands.CH_PLUS_COMMAND:
-                    FanController.ChangeFan(FanType.GPU, FanOperation.Up);
+                    FanController.ChangeFan(FanOperation.Up);
                     break;
 
                 case IrCommands.CH_COMMAND:
-                    FanController.ChangeFan(FanType.GPU, FanOperation.Default);
+                    FanController.ChangeFan(FanOperation.Default);
                     break;
 
                 // MEDIA

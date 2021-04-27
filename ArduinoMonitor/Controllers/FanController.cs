@@ -27,11 +27,11 @@ namespace ArduinoMonitor.Controllers
         private const float FAN_STEP = 10;
 
         private const string GPU_FAN_ID = "/nvidiagpu/0/control/0";
-        private const string CPU_FAN_ID = "/lpc/nct6795d/control/1/control";
-        private const string FRONT1_FAN_ID = "/lpc/nct6795d/control/0/control";
-        private const string FRONT2_FAN_ID = "/lpc/nct6795d/control/4/control";
-        private const string FRONT3_FAN_ID = "/lpc/nct6795d/control/5/control";
-        private const string REAR_FAN_ID = "/lpc/nct6795d/control/2/control";
+        private const string CPU_FAN_ID = "/lpc/nct6795d/control/1";
+        private const string FRONT1_FAN_ID = "/lpc/nct6795d/control/0";
+        private const string FRONT2_FAN_ID = "/lpc/nct6795d/control/4";
+        private const string FRONT3_FAN_ID = "/lpc/nct6795d/control/5";
+        private const string REAR_FAN_ID = "/lpc/nct6795d/control/2";
 
         private static readonly Dictionary<FanType, string> Fans = new Dictionary<FanType, string>()
         {
@@ -43,9 +43,20 @@ namespace ArduinoMonitor.Controllers
             {FanType.Rear, REAR_FAN_ID},
         };
 
-        public static void ChangeFan(FanType fan, FanOperation operation)
+        public static void ChangeFan(FanOperation operation)
         {
             ISensor fanSensor;
+
+            FanType fan;
+            try
+            {
+                fan = Program.Display.CurrentScreen.GetFanType();
+            }
+            catch (Exception e)
+            {
+                Program.Display.DisplayMessage("ERROR", e.Message.ToUpper());
+                return;
+            }
 
             if (fan == FanType.GPU)
             {
@@ -60,19 +71,24 @@ namespace ArduinoMonitor.Controllers
                 mb.Update();
                 fanSensor = mb.SubHardware[0].Sensors.First(x => x.Identifier.ToString() == Fans[fan]);
             }
-            
-            var value = fanSensor.Value.GetValueOrDefault(50);
-            string outputValue;
 
+            var value = fanSensor.Value.GetValueOrDefault(50);
+            var resultValue = value;
+
+            string outputValue;
             switch (operation)
             {
                 case FanOperation.Up:
-                    outputValue = (value + FAN_STEP).ToString("##") + "%";
-                    fanSensor.Control.SetSoftware(value + FAN_STEP);
+                    resultValue += FAN_STEP;
+                    if (resultValue > 100) resultValue = 100;
+                    outputValue = resultValue.ToString("##") + "%";
+                    fanSensor.Control.SetSoftware(resultValue);
                     break;
                 case FanOperation.Down:
-                    outputValue = (value - FAN_STEP).ToString("##") + "%";
-                    fanSensor.Control.SetSoftware(value - FAN_STEP);
+                    resultValue -= FAN_STEP;
+                    if (resultValue < 0) resultValue = 0;
+                    outputValue = resultValue.ToString("##") + "%";
+                    fanSensor.Control.SetSoftware(resultValue);
                     break;
                 case FanOperation.Default:
                     outputValue = "Default";
@@ -82,7 +98,7 @@ namespace ArduinoMonitor.Controllers
                     throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
             }
 
-            Program.Display.DisplayMessage("FAN CONTROL", $"{fanSensor.Name} {outputValue}");
+            Program.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
             Console.WriteLine($"FAN CONTROL | {fanSensor.Name} set to {outputValue}");
         }
     }

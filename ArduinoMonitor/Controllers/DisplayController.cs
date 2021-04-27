@@ -20,22 +20,57 @@ namespace ArduinoMonitor.Controllers
         FanRear
     }
 
+    public static class ScreenExtensions
+    {
+        public static FanType GetFanType(this Screen screen)
+        {
+            switch (screen)
+            {
+                case Screen.FanCPU:
+                    return FanType.CPU;
+                case Screen.FanGPU:
+                    return FanType.GPU;
+                case Screen.FanFront1:
+                    return FanType.Front1;
+                case Screen.FanFront2:
+                    return FanType.Front2;
+                case Screen.FanFront3:
+                    return FanType.Front3;
+                case Screen.FanRear:
+                    return FanType.Rear;
+                default:
+                    throw new Exception("Not a Fan screen");
+            }
+        }
+
+        public static bool IsFanScreen(this Screen screen)
+        {
+            return
+                screen == Screen.FanCPU ||
+                screen == Screen.FanGPU ||
+                screen == Screen.FanFront1 ||
+                screen == Screen.FanFront2 ||
+                screen == Screen.FanFront3 ||
+                screen == Screen.FanRear;
+        }
+    }
+
     public class DisplayController
     {
         private const string LCD_CLEAR_SYMBOL = "@";
         private const string LINE_BREAK_SYMBOL = "$";
 
-        private const int INFO_DELAY = 2000;
-        private const int MESSAGE_DELAY = INFO_DELAY * 2;
+        private const int DISPLAY_DELAY = 2000;
+        private const int MESSAGE_DELAY = DISPLAY_DELAY * 2;
 
-        private static bool IsContentBusy;
 
         private readonly SerialPort _port;
         private readonly IComputer _computer;
 
-        private Screen CurrentScreen { get; set; }
+        public Screen CurrentScreen { get; set; }
 
-        private bool _forceUpdate = false;
+        private bool _forceUpdate;
+        private static bool _isContentBusy;
 
         public DisplayController(SerialPort port, IComputer computer)
         {
@@ -46,10 +81,7 @@ namespace ArduinoMonitor.Controllers
 
         public void StartDisplay()
         {
-            while (true)
-            {
-                Display();
-            }
+            while (true) Display();
         }
 
         public void ChangeScreen(Screen screen)
@@ -61,12 +93,12 @@ namespace ArduinoMonitor.Controllers
 
         public void DisplayMessage(string header, string message)
         {
-            IsContentBusy = true;
+            _isContentBusy = true;
 
             _port.Write(LCD_CLEAR_SYMBOL);
             _port.Write(header + LINE_BREAK_SYMBOL + message);
 
-            Task.Delay(MESSAGE_DELAY).ContinueWith(x => IsContentBusy = false);
+            Task.Delay(DISPLAY_DELAY).ContinueWith(x => _isContentBusy = false);
 
             _forceUpdate = true;
         }
@@ -97,49 +129,33 @@ namespace ArduinoMonitor.Controllers
 
         private void Display()
         {
-            if (IsContentBusy) return;
+            if (_isContentBusy) return;
 
-            switch (CurrentScreen)
-            {
-                case Screen.Base:
-                    DisplayBaseScreen();
-                    break;
-                case Screen.GPU:
-                    DisplayGpuScreen();
-                    break;
-                case Screen.CPU:
-                    DisplayCpuScreen();
-                    break;
-                case Screen.RAM:
-                    DisplayRamScreen();
-                    break;
-                case Screen.FanCPU:
-                    DisplayFanScreen(FanType.CPU);
-                    break;
-                case Screen.FanGPU:
-                    DisplayFanScreen(FanType.GPU);
-                    break;
-                case Screen.FanFront1:
-                    DisplayFanScreen(FanType.Front1);
-                    break;
-                case Screen.FanFront2:
-                    DisplayFanScreen(FanType.Front2);
-                    break;
-                case Screen.FanFront3:
-                    DisplayFanScreen(FanType.Front3);
-                    break;
-                case Screen.FanRear:
-                    DisplayFanScreen(FanType.Rear);
-                    break;
-                case Screen.Weather:
-                    DisplayWeatherScreen();
-                    _forceUpdate = false;
-                    break;
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(CurrentScreen), CurrentScreen, null);
-            }
+            if (CurrentScreen.IsFanScreen()) DisplayFanScreen(CurrentScreen.GetFanType());
+            else
+                switch (CurrentScreen)
+                {
+                    case Screen.Base:
+                        DisplayBaseScreen();
+                        break;
+                    case Screen.GPU:
+                        DisplayGpuScreen();
+                        break;
+                    case Screen.CPU:
+                        DisplayCpuScreen();
+                        break;
+                    case Screen.RAM:
+                        DisplayRamScreen();
+                        break;
+                    case Screen.Weather:
+                        DisplayWeatherScreen();
+                        _forceUpdate = false;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(CurrentScreen), CurrentScreen, null);
+                }
 
-            Task.Delay(INFO_DELAY).Wait();
+            Task.Delay(DISPLAY_DELAY).Wait();
         }
 
         private void DisplayGpuScreen()

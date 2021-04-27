@@ -40,7 +40,7 @@ namespace ArduinoMonitor.Controllers
 
     public class FanItem
     {
-        public FanType Fan { get; private set; }
+        public FanType Fan { get; }
 
         public string RPM { get; set; }
         public string Percentage { get; set; }
@@ -252,9 +252,9 @@ namespace ArduinoMonitor.Controllers
 
             foreach (var sensor in hardware.Sensors)
                 if (sensor.Identifier.ToString() == identifiers.Temp)
-                    result.Temperature = sensor.Value?.ToString("##.##") ?? "~";
+                    result.Temperature = sensor.Value?.ToString("##.#") ?? "~";
                 else if (sensor.Identifier.ToString() == identifiers.Load)
-                    result.Load = sensor.Value?.ToString("##.##") ?? "~";
+                    result.Load = sensor.Value?.ToString("##.#") ?? "~";
 
             return result;
         }
