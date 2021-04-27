@@ -37,6 +37,8 @@ void loop() {
       lineCounter++;
       charCounter = 0;
     }
-    else lcd.setCursor(charCounter++, lineCounter); lcd.print(a);
+    else {
+      lcd.setCursor(charCounter++, lineCounter); lcd.print(a);
+    }
   }  
 }

@@ -11,7 +11,13 @@ namespace ArduinoMonitor.Controllers
         GPU,
         CPU,
         RAM,
-        Weather
+        Weather,
+        FanCPU,
+        FanGPU,
+        FanFront1,
+        FanFront2,
+        FanFront3,
+        FanRear
     }
 
     public class DisplayController
@@ -107,6 +113,24 @@ namespace ArduinoMonitor.Controllers
                 case Screen.RAM:
                     DisplayRamScreen();
                     break;
+                case Screen.FanCPU:
+                    DisplayFanScreen(FanType.CPU);
+                    break;
+                case Screen.FanGPU:
+                    DisplayFanScreen(FanType.GPU);
+                    break;
+                case Screen.FanFront1:
+                    DisplayFanScreen(FanType.Front1);
+                    break;
+                case Screen.FanFront2:
+                    DisplayFanScreen(FanType.Front2);
+                    break;
+                case Screen.FanFront3:
+                    DisplayFanScreen(FanType.Front3);
+                    break;
+                case Screen.FanRear:
+                    DisplayFanScreen(FanType.Rear);
+                    break;
                 case Screen.Weather:
                     DisplayWeatherScreen();
                     _forceUpdate = false;
@@ -149,6 +173,35 @@ namespace ArduinoMonitor.Controllers
                 $"RAM|{info.UsedPercentage}%" +
                 $"{LINE_BREAK_SYMBOL}" +
                 $"A:{info.Available}G|U:{info.Used}G");
+        }
+
+        private void DisplayFanScreen(FanType fan)
+        {
+            var fanInfo = SensorController.GetFanInfo(_computer, fan);
+            string fanName;
+
+            switch (fan)
+            {
+                case FanType.Front1:
+                    fanName = "First front";
+                    break;
+                case FanType.Front2:
+                    fanName = "Second front";
+                    break;
+                case FanType.Front3:
+                    fanName = "Third front";
+                    break;
+                default:
+                    fanName = fan.ToString();
+                    break;
+            }
+
+            fanName += " fan";
+
+            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(fanName +
+                        $"{LINE_BREAK_SYMBOL}" +
+                        $"{fanInfo.RPM}RPM | P:{fanInfo.Percentage}%");
         }
     }
 }
