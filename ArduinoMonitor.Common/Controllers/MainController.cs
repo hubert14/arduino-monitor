@@ -11,12 +11,9 @@ namespace ArduinoMonitor.Common.Controllers
         private const int BAUD_RATE = 9600;
         private static int _openPortDelayMilliseconds = 5 * 1000;
 
-        public static readonly SerialPort ArduinoPort = new SerialPort(COM_PORT) {BaudRate = BAUD_RATE};
-
-        public static readonly Computer Computer = new Computer
+        private static readonly SerialPort ArduinoPort = new SerialPort(COM_PORT) {BaudRate = BAUD_RATE};
+        private static readonly Computer Computer = new Computer
             {CPUEnabled = true, GPUEnabled = true, MainboardEnabled = true, RAMEnabled = true};
-
-        public static readonly DisplayController Display = new DisplayController(ArduinoPort, Computer);
 
         public static void Start()
         {
@@ -36,7 +33,16 @@ namespace ArduinoMonitor.Common.Controllers
 
             Computer.Open();
             ArduinoPort.DataReceived += ArduinoPortOnDataReceived;
-            Display.StartDisplay();
+
+            Init();
+        }
+
+        private static void Init()
+        {
+            MediaController.Init();
+            SensorController.Init(Computer);
+            FanController.Init(Computer);
+            DisplayController.StartDisplay(ArduinoPort);
         }
 
         private static void ArduinoPortOnDataReceived(object sender, SerialDataReceivedEventArgs e)

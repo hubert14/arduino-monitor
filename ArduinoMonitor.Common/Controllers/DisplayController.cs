@@ -1,63 +1,12 @@
 ﻿using System;
 using System.IO.Ports;
 using System.Threading.Tasks;
+using ArduinoMonitor.Common.Enums;
 using OpenHardwareMonitor.Hardware;
 
 namespace ArduinoMonitor.Common.Controllers
 {
-    public enum Screen
-    {
-        Base,
-        GPU,
-        CPU,
-        RAM,
-        Weather,
-        FrontFans,
-        FanCPU,
-        FanGPU,
-        FanFront1,
-        FanFront2,
-        FanFront3,
-        FanRear
-    }
-
-    public static class ScreenExtensions
-    {
-        public static FanType GetFanType(this Screen screen)
-        {
-            switch (screen)
-            {
-                case Screen.FanCPU:
-                    return FanType.CPU;
-                case Screen.FanGPU:
-                    return FanType.GPU;
-                case Screen.FanFront1:
-                    return FanType.Front1;
-                case Screen.FanFront2:
-                    return FanType.Front2;
-                case Screen.FanFront3:
-                    return FanType.Front3;
-                case Screen.FanRear:
-                    return FanType.Rear;
-                default:
-                    throw new Exception("Not a Fan screen");
-            }
-        }
-
-        public static bool IsFanScreen(this Screen screen)
-        {
-            return
-                screen == Screen.FrontFans ||
-                screen == Screen.FanCPU ||
-                screen == Screen.FanGPU ||
-                screen == Screen.FanFront1 ||
-                screen == Screen.FanFront2 ||
-                screen == Screen.FanFront3 ||
-                screen == Screen.FanRear;
-        }
-    }
-
-    public class DisplayController
+    public static class DisplayController
     {
         private const string LCD_CLEAR_SYMBOL = "@";
         private const string LINE_BREAK_SYMBOL = "$";
@@ -65,34 +14,34 @@ namespace ArduinoMonitor.Common.Controllers
         private const int DISPLAY_DELAY = 2000;
 
         private static bool _isContentBusy;
+        private static bool _forceUpdate;
 
-        private readonly IComputer _computer;
-        private readonly SerialPort _port;
+        private static SerialPort _port;
 
-        private bool _forceUpdate;
-
-        public DisplayController(SerialPort port, IComputer computer)
+        static DisplayController()
         {
-            _port = port;
-            _computer = computer;
             CurrentScreen = Screen.Base;
+
+            IrController.Display += ChangeScreen;
         }
 
-        public Screen CurrentScreen { get; set; }
+        public static Screen CurrentScreen { get; set; }
 
-        public void StartDisplay()
+        public static void StartDisplay(SerialPort port)
         {
+            _port = port;
+
             while (true) Display();
         }
 
-        public void ChangeScreen(Screen screen)
+        public static void ChangeScreen(Screen screen)
         {
             if (screen == CurrentScreen) return;
             CurrentScreen = screen;
             _forceUpdate = true;
         }
 
-        public void DisplayMessage(string header, string message)
+        public static void Display(string header, string message)
         {
             _isContentBusy = true;
 
@@ -104,7 +53,7 @@ namespace ArduinoMonitor.Common.Controllers
             _forceUpdate = true;
         }
 
-        private void Display()
+        private static void Display()
         {
             if (_isContentBusy) return;
 
@@ -141,9 +90,9 @@ namespace ArduinoMonitor.Common.Controllers
             Task.Delay(DISPLAY_DELAY).Wait();
         }
 
-        private void DisplayBaseScreen()
+        private static void DisplayBaseScreen()
         {
-            var info = SensorController.GetBaseInfo(_computer);
+            var info = SensorController.GetBaseInfo();
 
             _port.Write(LCD_CLEAR_SYMBOL);
             _port.Write(
@@ -152,7 +101,7 @@ namespace ArduinoMonitor.Common.Controllers
                 $"CPU:{info.CPU.Temperature}C | {info.CPU.Load}%");
         }
 
-        private void DisplayWeatherScreen()
+        private static void DisplayWeatherScreen()
         {
             if (!_forceUpdate) return;
 
@@ -166,9 +115,9 @@ namespace ArduinoMonitor.Common.Controllers
         }
 
 
-        private void DisplayGpuScreen()
+        private static void DisplayGpuScreen()
         {
-            var info = SensorController.GetGpuInfo(_computer);
+            var info = SensorController.GetGpuInfo();
 
             _port.Write(LCD_CLEAR_SYMBOL);
             _port.Write(
@@ -177,9 +126,9 @@ namespace ArduinoMonitor.Common.Controllers
                 $"M:{info.Memory}MB");
         }
 
-        private void DisplayCpuScreen()
+        private static void DisplayCpuScreen()
         {
-            var info = SensorController.GetCpuInfo(_computer);
+            var info = SensorController.GetCpuInfo();
 
             _port.Write(LCD_CLEAR_SYMBOL);
             _port.Write(
@@ -188,9 +137,9 @@ namespace ArduinoMonitor.Common.Controllers
                 $"P:{info.Power}W  C:{info.Clock}MHz");
         }
 
-        private void DisplayRamScreen()
+        private static void DisplayRamScreen()
         {
-            var info = SensorController.GetRamInfo(_computer);
+            var info = SensorController.GetRamInfo();
 
             _port.Write(LCD_CLEAR_SYMBOL);
             _port.Write(
@@ -199,9 +148,9 @@ namespace ArduinoMonitor.Common.Controllers
                 $"A:{info.Available}G  U:{info.Used}G");
         }
 
-        private void DisplayFanScreen(FanType fan)
+        private static void DisplayFanScreen(FanType fan)
         {
-            var fanInfo = SensorController.GetFanInfo(_computer, fan);
+            var fanInfo = SensorController.GetFanInfo(fan);
             string fanName;
 
             switch (fan)
@@ -228,9 +177,9 @@ namespace ArduinoMonitor.Common.Controllers
                         $"{fanInfo.RPM}RPM | P:{fanInfo.Percentage}%");
         }
 
-        private void DisplayFrontFansScreen()
+        private static void DisplayFrontFansScreen()
         {
-            var fansInfo = SensorController.GetFrontFansInfo(_computer);
+            var fansInfo = SensorController.GetFrontFansInfo();
 
             _port.Write(LCD_CLEAR_SYMBOL);
             _port.Write("   FRONT FANS  " +

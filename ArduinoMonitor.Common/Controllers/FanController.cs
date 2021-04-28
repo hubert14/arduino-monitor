@@ -1,29 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ArduinoMonitor.Common.Enums;
 using OpenHardwareMonitor.Hardware;
 
 namespace ArduinoMonitor.Common.Controllers
 {
-    public enum FanType
+    internal static class FanController
     {
-        GPU,
-        CPU,
-        Front1,
-        Front2,
-        Front3,
-        Rear
-    }
+        private static IComputer _computer;
 
-    public enum FanOperation
-    {
-        Default,
-        Up,
-        Down
-    }
+        static FanController() => IrController.Fan += ChangeFan;
 
-    internal class FanController
-    {
+        public static void Init(IComputer computer) => _computer = computer;
+
         private const float FAN_STEP = 10;
 
         private const string GPU_FAN_ID = "/nvidiagpu/0/control/0";
@@ -48,9 +38,9 @@ namespace ArduinoMonitor.Common.Controllers
             ISensor fanSensor;
             var outputValue = string.Empty;
 
-            if (MainController.Display.CurrentScreen == Screen.FrontFans)
+            if (DisplayController.CurrentScreen == Screen.FrontFans)
             {
-                var mb = MainController.Computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
+                var mb = _computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
                 mb.Update();
                 var fans = mb.SubHardware[0].Sensors.Where(x => x.Identifier.ToString() == FRONT1_FAN_ID ||
                                                                 x.Identifier.ToString() == FRONT2_FAN_ID ||
@@ -60,31 +50,31 @@ namespace ArduinoMonitor.Common.Controllers
 
                 fans.ForEach(x => outputValue = ChangeFan(x, minValue, operation));
 
-                MainController.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
+                DisplayController.Display("FAN CONTROL", $"{outputValue}");
                 return;
             }
 
             FanType fan;
             try
             {
-                fan = MainController.Display.CurrentScreen.GetFanType();
+                fan = DisplayController.CurrentScreen.GetFanType();
             }
             catch (Exception e)
             {
-                MainController.Display.DisplayMessage("ERROR", e.Message.ToUpper());
+                DisplayController.Display("ERROR", e.Message.ToUpper());
                 return;
             }
 
             if (fan == FanType.GPU)
             {
-                var gpu = MainController.Computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
+                var gpu = _computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
                 gpu.Update();
 
                 fanSensor = gpu.Sensors.First(x => x.Identifier.ToString() == GPU_FAN_ID);
             }
             else
             {
-                var mb = MainController.Computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
+                var mb = _computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
                 mb.Update();
                 fanSensor = mb.SubHardware[0].Sensors.First(x => x.Identifier.ToString() == Fans[fan]);
             }
@@ -92,7 +82,7 @@ namespace ArduinoMonitor.Common.Controllers
             var value = fanSensor.Value.GetValueOrDefault(50);
             outputValue = ChangeFan(fanSensor, value, operation);
 
-            MainController.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
+            DisplayController.Display("FAN CONTROL", $"{outputValue}");
         }
 
         private static string ChangeFan(ISensor fan, float value, FanOperation operation)

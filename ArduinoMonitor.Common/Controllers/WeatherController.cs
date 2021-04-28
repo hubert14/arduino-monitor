@@ -1,19 +1,11 @@
 ﻿using System.Linq;
 using System.Net.Http;
+using ArduinoMonitor.Common.Models;
 using HtmlAgilityPack;
 
 namespace ArduinoMonitor.Common.Controllers
 {
-    public class WeatherInfo
-    {
-        public string Temperature { get; set; }
-        public string Pressure { get; set; }
-        public string Humidity { get; set; }
-        public string Wind { get; set; }
-        public string PrecipitationProbability { get; set; }
-    }
-
-    public class WeatherController
+    public static class WeatherController
     {
         private const int TEMPERATURE_NODE = 2;
         private const int PRESSURE_NODE = 4;

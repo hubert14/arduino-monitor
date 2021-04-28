@@ -1,52 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ArduinoMonitor.Common.Enums;
+using ArduinoMonitor.Common.Models;
 using OpenHardwareMonitor.Hardware;
 
 namespace ArduinoMonitor.Common.Controllers
 {
-    public class SystemBaseInfo
-    {
-        public class HardwareBaseInfo
-        {
-            public string Load { get; set; }
-            public string Temperature { get; set; }
-        }
-
-        public HardwareBaseInfo GPU { get; set; }
-        public HardwareBaseInfo CPU { get; set; }
-    }
-
-    public class GpuInfo
-    {
-        public string UsedPercentage { get; set; }
-        public string Memory { get; set; }
-    }
-
-    public class CpuInfo
-    {
-        public string UsedPercentage { get; set; }
-        public string Power { get; set; }
-        public string Clock { get; set; }
-    }
-
-    public class RamInfo
-    {
-        public string UsedPercentage { get; set; }
-        public string Used { get; set; }
-        public string Available { get; set; }
-    }
-
-    public class FanItem
-    {
-        public FanType Fan { get; }
-
-        public string RPM { get; set; }
-        public string Percentage { get; set; }
-
-        public FanItem(FanType fan) => Fan = fan;
-    }
-
     public static class SensorController
     {
         #region Identifiers
@@ -89,6 +49,11 @@ namespace ArduinoMonitor.Common.Controllers
 
         private const string PERCENTAGE_FORMAT = "###.#";
         private const string RPM_FORMAT = "####";
+        
+        private static IComputer _computer;
+
+        public static void Init(IComputer computer) => _computer = computer;
+
 
         private static readonly List<(FanType Type, string RPMId, string PercId)> MotherboardFans =
             new List<(FanType Fan, string RPMId, string PercentageId)>
@@ -100,11 +65,11 @@ namespace ArduinoMonitor.Common.Controllers
                 (FanType.Rear, REAR_FAN_RPM, REAR_FAN_PERCENTAGE),
             };
 
-        public static List<FanItem> GetFansInfo(IComputer computer)
+        public static List<FanItem> GetFansInfo()
         {
-            var gpu = computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
+            var gpu = _computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
             gpu.Update();
-            var mainboard = computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
+            var mainboard = _computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
             mainboard.Update();
             var subMainboard = mainboard.SubHardware[0];
             subMainboard.Update();
@@ -138,9 +103,9 @@ namespace ArduinoMonitor.Common.Controllers
             return resultFansList;
         }
 
-        public static List<FanItem> GetFrontFansInfo(IComputer computer)
+        public static List<FanItem> GetFrontFansInfo()
         {
-            var mainboard = computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
+            var mainboard = _computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
             mainboard.Update();
             var subMainBoard = mainboard.SubHardware[0];
             subMainBoard.Update();
@@ -155,11 +120,11 @@ namespace ArduinoMonitor.Common.Controllers
                 }).ToList();
         }
 
-        public static FanItem GetFanInfo(IComputer computer, FanType type)
+        public static FanItem GetFanInfo(FanType type)
         {
             if (type == FanType.GPU)
             {
-                var gpu = computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
+                var gpu = _computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
                 gpu.Update();
 
                 var gpuItem = new FanItem(FanType.GPU);
@@ -178,7 +143,7 @@ namespace ArduinoMonitor.Common.Controllers
                 return gpuItem;
             }
 
-            var mainboard = computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
+            var mainboard = _computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
             mainboard.Update();
             var subMainBoard = mainboard.SubHardware[0];
             subMainBoard.Update();
@@ -193,9 +158,9 @@ namespace ArduinoMonitor.Common.Controllers
             };
         }
 
-        public static GpuInfo GetGpuInfo(IComputer computer)
+        public static GpuInfo GetGpuInfo()
         {
-            var gpu = computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
+            var gpu = _computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
             gpu.Update();
 
             var result = new GpuInfo();
@@ -214,10 +179,10 @@ namespace ArduinoMonitor.Common.Controllers
             return result;
         }
 
-        public static CpuInfo GetCpuInfo(IComputer computer)
+        public static CpuInfo GetCpuInfo()
         {
-            var mainBoard = computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
-            var cpu = computer.Hardware.First(x => x.HardwareType == HardwareType.CPU);
+            var mainBoard = _computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
+            var cpu = _computer.Hardware.First(x => x.HardwareType == HardwareType.CPU);
 
             cpu.Update();
             mainBoard.Update();
@@ -244,9 +209,9 @@ namespace ArduinoMonitor.Common.Controllers
             return result;
         }
 
-        public static RamInfo GetRamInfo(IComputer computer)
+        public static RamInfo GetRamInfo()
         {
-            var ram = computer.Hardware.First(x => x.HardwareType == HardwareType.RAM);
+            var ram = _computer.Hardware.First(x => x.HardwareType == HardwareType.RAM);
             ram.Update();
 
             var result = new RamInfo();
@@ -269,10 +234,10 @@ namespace ArduinoMonitor.Common.Controllers
             return result;
         }
 
-        public static SystemBaseInfo GetBaseInfo(IComputer computer)
+        public static SystemBaseInfo GetBaseInfo()
         {
-            var cpu = computer.Hardware.First(x => x.HardwareType == HardwareType.CPU);
-            var gpu = computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
+            var cpu = _computer.Hardware.First(x => x.HardwareType == HardwareType.CPU);
+            var gpu = _computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
 
             cpu.Update();
             gpu.Update();
