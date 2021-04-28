@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices.ComTypes;
-
-namespace ArduinoMonitor.Common.Controllers
+﻿namespace ArduinoMonitor.Common.Controllers
 {
     public static class IrCommands
     {
@@ -33,7 +31,7 @@ namespace ArduinoMonitor.Common.Controllers
 
     public class IrController
     {
-        public void DecodeCommand(string command)
+        public static void DecodeCommand(string command)
         {
             command = command
                 .Replace("\r\n", "")

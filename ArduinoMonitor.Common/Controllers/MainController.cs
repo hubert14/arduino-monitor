@@ -17,12 +17,10 @@ namespace ArduinoMonitor.Common.Controllers
             {CPUEnabled = true, GPUEnabled = true, MainboardEnabled = true, RAMEnabled = true};
 
         public static readonly DisplayController Display = new DisplayController(ArduinoPort, Computer);
-        public static readonly IrController IrDecoder = new IrController();
 
         public static void Start()
         {
             while (!ArduinoPort.IsOpen)
-            {
                 try
                 {
                     ArduinoPort.Open();
@@ -35,7 +33,6 @@ namespace ArduinoMonitor.Common.Controllers
 
                     if (_openPortDelayMilliseconds < 240 * 1000) _openPortDelayMilliseconds += 5 * 1000;
                 }
-            }
 
             Computer.Open();
             ArduinoPort.DataReceived += ArduinoPortOnDataReceived;
@@ -45,7 +42,7 @@ namespace ArduinoMonitor.Common.Controllers
         private static void ArduinoPortOnDataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             var command = ArduinoPort.ReadLine();
-            IrDecoder.DecodeCommand(command);
+            IrController.DecodeCommand(command);
         }
     }
 }

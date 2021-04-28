@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.Intrinsics.X86;
 using OpenHardwareMonitor.Hardware;
 
 namespace ArduinoMonitor.Common.Controllers
@@ -13,7 +12,7 @@ namespace ArduinoMonitor.Common.Controllers
         Front1,
         Front2,
         Front3,
-        Rear,
+        Rear
     }
 
     public enum FanOperation
@@ -34,20 +33,20 @@ namespace ArduinoMonitor.Common.Controllers
         private const string FRONT3_FAN_ID = "/lpc/nct6795d/control/5";
         private const string REAR_FAN_ID = "/lpc/nct6795d/control/2";
 
-        private static readonly Dictionary<FanType, string> Fans = new Dictionary<FanType, string>()
+        private static readonly Dictionary<FanType, string> Fans = new Dictionary<FanType, string>
         {
             {FanType.CPU, CPU_FAN_ID},
             {FanType.GPU, GPU_FAN_ID},
             {FanType.Front1, FRONT1_FAN_ID},
             {FanType.Front2, FRONT2_FAN_ID},
             {FanType.Front3, FRONT3_FAN_ID},
-            {FanType.Rear, REAR_FAN_ID},
+            {FanType.Rear, REAR_FAN_ID}
         };
 
         public static void ChangeFan(FanOperation operation)
         {
             ISensor fanSensor;
-            string outputValue = string.Empty;
+            var outputValue = string.Empty;
 
             if (MainController.Display.CurrentScreen == Screen.FrontFans)
             {
@@ -58,7 +57,7 @@ namespace ArduinoMonitor.Common.Controllers
                                                                 x.Identifier.ToString() == FRONT3_FAN_ID).ToList();
 
                 var minValue = fans.Min(x => x.Value) ?? 50;
-                
+
                 fans.ForEach(x => outputValue = ChangeFan(x, minValue, operation));
 
                 MainController.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
@@ -92,14 +91,14 @@ namespace ArduinoMonitor.Common.Controllers
 
             var value = fanSensor.Value.GetValueOrDefault(50);
             outputValue = ChangeFan(fanSensor, value, operation);
-            
+
             MainController.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
         }
 
         private static string ChangeFan(ISensor fan, float value, FanOperation operation)
         {
             var resultValue = value;
-            
+
             string outputValue;
             switch (operation)
             {

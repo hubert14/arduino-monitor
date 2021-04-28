@@ -64,13 +64,12 @@ namespace ArduinoMonitor.Common.Controllers
 
         private const int DISPLAY_DELAY = 2000;
 
-        private readonly SerialPort _port;
-        private readonly IComputer _computer;
+        private static bool _isContentBusy;
 
-        public Screen CurrentScreen { get; set; }
+        private readonly IComputer _computer;
+        private readonly SerialPort _port;
 
         private bool _forceUpdate;
-        private static bool _isContentBusy;
 
         public DisplayController(SerialPort port, IComputer computer)
         {
@@ -78,6 +77,8 @@ namespace ArduinoMonitor.Common.Controllers
             _computer = computer;
             CurrentScreen = Screen.Base;
         }
+
+        public Screen CurrentScreen { get; set; }
 
         public void StartDisplay()
         {
@@ -103,40 +104,17 @@ namespace ArduinoMonitor.Common.Controllers
             _forceUpdate = true;
         }
 
-        private void DisplayBaseScreen()
-        {
-            var info = SensorController.GetBaseInfo(_computer);
-
-            _port.Write(LCD_CLEAR_SYMBOL);
-            _port.Write(
-                $"GPU:{info.GPU.Temperature}C|{info.GPU.Load}%" +
-                $"{LINE_BREAK_SYMBOL}" +
-                $"CPU:{info.CPU.Temperature}C|{info.CPU.Load}%");
-        }
-
-        private void DisplayWeatherScreen()
-        {
-            if (!_forceUpdate) return;
-
-            var weather = WeatherController.GetWeather();
-
-            _port.Write(LCD_CLEAR_SYMBOL);
-            _port.Write(
-                $"T:{weather.Temperature}|H:{weather.Humidity}%|P:{weather.PrecipitationProbability}%" +
-                $"{LINE_BREAK_SYMBOL}" +
-                $"P:{weather.Pressure}mm|W:{weather.Wind}m/s");
-        }
-
         private void Display()
         {
             if (_isContentBusy) return;
 
             if (CurrentScreen.IsFanScreen())
             {
-                if(CurrentScreen == Screen.FrontFans) DisplayFrontFansScreen();
+                if (CurrentScreen == Screen.FrontFans) DisplayFrontFansScreen();
                 else DisplayFanScreen(CurrentScreen.GetFanType());
             }
             else
+            {
                 switch (CurrentScreen)
                 {
                     case Screen.Base:
@@ -158,9 +136,35 @@ namespace ArduinoMonitor.Common.Controllers
                     default:
                         throw new ArgumentOutOfRangeException(nameof(CurrentScreen), CurrentScreen, null);
                 }
+            }
 
             Task.Delay(DISPLAY_DELAY).Wait();
         }
+
+        private void DisplayBaseScreen()
+        {
+            var info = SensorController.GetBaseInfo(_computer);
+
+            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(
+                $"GPU:{info.GPU.Temperature}C | {info.GPU.Load}%" +
+                $"{LINE_BREAK_SYMBOL}" +
+                $"CPU:{info.CPU.Temperature}C | {info.CPU.Load}%");
+        }
+
+        private void DisplayWeatherScreen()
+        {
+            if (!_forceUpdate) return;
+
+            var weather = WeatherController.GetWeather();
+
+            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(
+                $"T:{weather.Temperature}|H:{weather.Humidity}%|P:{weather.PrecipitationProbability}%" +
+                $"{LINE_BREAK_SYMBOL}" +
+                $"P:{weather.Pressure}mm|W:{weather.Wind}m/s");
+        }
+
 
         private void DisplayGpuScreen()
         {
@@ -168,9 +172,9 @@ namespace ArduinoMonitor.Common.Controllers
 
             _port.Write(LCD_CLEAR_SYMBOL);
             _port.Write(
-                $"GPU|F:{info.FanRpm}RPM" +
+                $"GPU | {info.UsedPercentage}%" +
                 $"{LINE_BREAK_SYMBOL}" +
-                $"F:{info.FanPercentage}%|M:{info.Memory}MB");
+                $"M:{info.Memory}MB");
         }
 
         private void DisplayCpuScreen()
@@ -179,9 +183,9 @@ namespace ArduinoMonitor.Common.Controllers
 
             _port.Write(LCD_CLEAR_SYMBOL);
             _port.Write(
-                $"CPU|F:{info.FanRpm}RPM" +
+                $"CPU | {info.UsedPercentage}%" +
                 $"{LINE_BREAK_SYMBOL}" +
-                $"P:{info.Power}W|C:{info.Clock}MHz");
+                $"P:{info.Power}W  C:{info.Clock}MHz");
         }
 
         private void DisplayRamScreen()
@@ -190,9 +194,9 @@ namespace ArduinoMonitor.Common.Controllers
 
             _port.Write(LCD_CLEAR_SYMBOL);
             _port.Write(
-                $"RAM|{info.UsedPercentage}%" +
+                $"RAM | {info.UsedPercentage}%" +
                 $"{LINE_BREAK_SYMBOL}" +
-                $"A:{info.Available}G|U:{info.Used}G");
+                $"A:{info.Available}G  U:{info.Used}G");
         }
 
         private void DisplayFanScreen(FanType fan)
@@ -229,10 +233,9 @@ namespace ArduinoMonitor.Common.Controllers
             var fansInfo = SensorController.GetFrontFansInfo(_computer);
 
             _port.Write(LCD_CLEAR_SYMBOL);
-            _port.Write($"   FRONT FANS  " +
+            _port.Write("   FRONT FANS  " +
                         $"{LINE_BREAK_SYMBOL}" +
                         $"{fansInfo[0].Percentage}% | {fansInfo[1].Percentage}% | {fansInfo[2].Percentage}%");
-
         }
     }
 }
