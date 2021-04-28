@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Intrinsics.X86;
 using OpenHardwareMonitor.Hardware;
 
 namespace ArduinoMonitor.Common.Controllers
@@ -46,6 +47,23 @@ namespace ArduinoMonitor.Common.Controllers
         public static void ChangeFan(FanOperation operation)
         {
             ISensor fanSensor;
+            string outputValue = string.Empty;
+
+            if (MainController.Display.CurrentScreen == Screen.FrontFans)
+            {
+                var mb = MainController.Computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
+                mb.Update();
+                var fans = mb.SubHardware[0].Sensors.Where(x => x.Identifier.ToString() == FRONT1_FAN_ID ||
+                                                                x.Identifier.ToString() == FRONT2_FAN_ID ||
+                                                                x.Identifier.ToString() == FRONT3_FAN_ID).ToList();
+
+                var minValue = fans.Min(x => x.Value) ?? 50;
+                
+                fans.ForEach(x => outputValue = ChangeFan(x, minValue, operation));
+
+                MainController.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
+                return;
+            }
 
             FanType fan;
             try
@@ -73,33 +91,39 @@ namespace ArduinoMonitor.Common.Controllers
             }
 
             var value = fanSensor.Value.GetValueOrDefault(50);
-            var resultValue = value;
+            outputValue = ChangeFan(fanSensor, value, operation);
+            
+            MainController.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
+        }
 
+        private static string ChangeFan(ISensor fan, float value, FanOperation operation)
+        {
+            var resultValue = value;
+            
             string outputValue;
             switch (operation)
             {
                 case FanOperation.Up:
                     resultValue += FAN_STEP;
                     if (resultValue > 100) resultValue = 100;
-                    outputValue = resultValue.ToString("##") + "%";
-                    fanSensor.Control.SetSoftware(resultValue);
+                    outputValue = resultValue.ToString("###") + "%";
+                    fan.Control.SetSoftware(resultValue);
                     break;
                 case FanOperation.Down:
                     resultValue -= FAN_STEP;
                     if (resultValue < 0) resultValue = 0;
-                    outputValue = resultValue.ToString("##") + "%";
-                    fanSensor.Control.SetSoftware(resultValue);
+                    outputValue = resultValue.ToString("###") + "%";
+                    fan.Control.SetSoftware(resultValue);
                     break;
                 case FanOperation.Default:
                     outputValue = "Default";
-                    fanSensor.Control.SetDefault();
+                    fan.Control.SetDefault();
                     break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
             }
 
-            MainController.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
-            Console.WriteLine($"FAN CONTROL | {fanSensor.Name} set to {outputValue}");
+            return outputValue;
         }
     }
 }

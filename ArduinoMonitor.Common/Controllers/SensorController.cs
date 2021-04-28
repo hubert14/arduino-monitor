@@ -97,7 +97,8 @@ namespace ArduinoMonitor.Common.Controllers
             var mainboard = computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
             mainboard.Update();
             var subMainboard = mainboard.SubHardware[0];
-
+            subMainboard.Update();
+            
             var resultFansList = MotherboardFans.Select(fan =>
             {
                 var rpm =
@@ -125,6 +126,23 @@ namespace ArduinoMonitor.Common.Controllers
 
             resultFansList.Add(gpuItem);
             return resultFansList;
+        }
+
+        public static List<FanItem> GetFrontFansInfo(IComputer computer)
+        {
+            var mainboard = computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
+            mainboard.Update();
+            var subMainBoard = mainboard.SubHardware[0];
+            subMainBoard.Update();
+
+            return MotherboardFans.Where(x =>
+                    x.Type == FanType.Front1 || x.Type == FanType.Front2 || x.Type == FanType.Front3)
+                .Select(f => new FanItem(f.Type)
+                {
+                    RPM = subMainBoard.Sensors.First(x => x.Identifier.ToString() == f.RPMId).Value?.ToString("####"),
+                    Percentage = subMainBoard.Sensors.First(x => x.Identifier.ToString() == f.PercId).Value
+                        ?.ToString("###"),
+                }).ToList();
         }
 
         public static FanItem GetFanInfo(IComputer computer, FanType type)
@@ -173,12 +191,18 @@ namespace ArduinoMonitor.Common.Controllers
             var result = new GpuInfo();
 
             foreach (var sensor in gpu.Sensors)
-                if (sensor.Identifier.ToString() == GPU_FAN_RPM)
-                    result.FanRpm = sensor.Value?.ToString("####") ?? "~";
-                else if (sensor.Identifier.ToString() == GPU_FAN_PERCENTAGE)
-                    result.FanPercentage = sensor.Value?.ToString("####") ?? "~";
-                else if (sensor.Identifier.ToString() == GPU_MEMORY)
-                    result.Memory = sensor.Value?.ToString("####") ?? "~";
+                switch (sensor.Identifier.ToString())
+                {
+                    case GPU_FAN_RPM:
+                        result.FanRpm = sensor.Value?.ToString("####") ?? "~";
+                        break;
+                    case GPU_FAN_PERCENTAGE:
+                        result.FanPercentage = sensor.Value?.ToString("####") ?? "~";
+                        break;
+                    case GPU_MEMORY:
+                        result.Memory = sensor.Value?.ToString("####") ?? "~";
+                        break;
+                }
 
             return result;
         }
@@ -194,16 +218,22 @@ namespace ArduinoMonitor.Common.Controllers
             var subMainBoard = mainBoard.SubHardware[0];
             subMainBoard.Update();
 
-            var result = new CpuInfo();
-
-            result.FanRpm = subMainBoard.Sensors.First(x => x.Identifier.ToString() == CPU_FAN_RPM).Value
-                                ?.ToString("####") ?? "~";
+            var result = new CpuInfo
+            {
+                FanRpm = subMainBoard.Sensors.First(x => x.Identifier.ToString() == CPU_FAN_RPM).Value
+                             ?.ToString("####") ?? "~"
+            };
 
             foreach (var sensor in cpu.Sensors)
-                if (sensor.Identifier.ToString() == CPU_POWER)
-                    result.Power = sensor.Value?.ToString("##.#") ?? "~";
-                else if (sensor.Identifier.ToString() == CPU_CLOCK)
-                    result.Clock = sensor.Value?.ToString("####") ?? "~";
+                switch (sensor.Identifier.ToString())
+                {
+                    case CPU_POWER:
+                        result.Power = sensor.Value?.ToString("##.#") ?? "~";
+                        break;
+                    case CPU_CLOCK:
+                        result.Clock = sensor.Value?.ToString("####") ?? "~";
+                        break;
+                }
 
             return result;
         }
@@ -216,10 +246,15 @@ namespace ArduinoMonitor.Common.Controllers
             var result = new RamInfo();
 
             foreach (var sensor in ram.Sensors)
-                if (sensor.Identifier.ToString() == RAM_USED)
-                    result.Used = sensor.Value?.ToString("##.#") ?? "~";
-                else if (sensor.Identifier.ToString() == RAM_AVAILABLE)
-                    result.Available = sensor.Value?.ToString("##.#") ?? "~";
+                switch (sensor.Identifier.ToString())
+                {
+                    case RAM_USED:
+                        result.Used = sensor.Value?.ToString("##.#") ?? "~";
+                        break;
+                    case RAM_AVAILABLE:
+                        result.Available = sensor.Value?.ToString("##.#") ?? "~";
+                        break;
+                }
 
             result.UsedPercentage = ((float.Parse(result.Used) * 100) / (float.Parse(result.Used) +
                                                                          float.Parse(result.Available)))

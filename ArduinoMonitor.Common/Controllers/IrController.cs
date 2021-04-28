@@ -1,4 +1,6 @@
-﻿namespace ArduinoMonitor.Common.Controllers
+﻿using System.Runtime.InteropServices.ComTypes;
+
+namespace ArduinoMonitor.Common.Controllers
 {
     public static class IrCommands
     {
@@ -106,6 +108,9 @@
                     break;
                 case IrCommands.NINE_COMMAND:
                     MainController.Display.ChangeScreen(Screen.FanFront3);
+                    break;
+                case IrCommands.PLUS_200_COMMAND:
+                    MainController.Display.ChangeScreen(Screen.FrontFans);
                     break;
             }
         }

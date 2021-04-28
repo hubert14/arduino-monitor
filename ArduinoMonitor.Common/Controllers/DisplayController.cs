@@ -12,6 +12,7 @@ namespace ArduinoMonitor.Common.Controllers
         CPU,
         RAM,
         Weather,
+        FrontFans,
         FanCPU,
         FanGPU,
         FanFront1,
@@ -46,6 +47,7 @@ namespace ArduinoMonitor.Common.Controllers
         public static bool IsFanScreen(this Screen screen)
         {
             return
+                screen == Screen.FrontFans ||
                 screen == Screen.FanCPU ||
                 screen == Screen.FanGPU ||
                 screen == Screen.FanFront1 ||
@@ -61,8 +63,6 @@ namespace ArduinoMonitor.Common.Controllers
         private const string LINE_BREAK_SYMBOL = "$";
 
         private const int DISPLAY_DELAY = 2000;
-        private const int MESSAGE_DELAY = DISPLAY_DELAY * 2;
-
 
         private readonly SerialPort _port;
         private readonly IComputer _computer;
@@ -131,7 +131,11 @@ namespace ArduinoMonitor.Common.Controllers
         {
             if (_isContentBusy) return;
 
-            if (CurrentScreen.IsFanScreen()) DisplayFanScreen(CurrentScreen.GetFanType());
+            if (CurrentScreen.IsFanScreen())
+            {
+                if(CurrentScreen == Screen.FrontFans) DisplayFrontFansScreen();
+                else DisplayFanScreen(CurrentScreen.GetFanType());
+            }
             else
                 switch (CurrentScreen)
                 {
@@ -218,6 +222,17 @@ namespace ArduinoMonitor.Common.Controllers
             _port.Write(fanName +
                         $"{LINE_BREAK_SYMBOL}" +
                         $"{fanInfo.RPM}RPM | P:{fanInfo.Percentage}%");
+        }
+
+        private void DisplayFrontFansScreen()
+        {
+            var fansInfo = SensorController.GetFrontFansInfo(_computer);
+
+            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write($"   FRONT FANS  " +
+                        $"{LINE_BREAK_SYMBOL}" +
+                        $"{fansInfo[0].Percentage}% | {fansInfo[1].Percentage}% | {fansInfo[2].Percentage}%");
+
         }
     }
 }

@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk.Worker">
 
   <PropertyGroup>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net5.0-windows</TargetFramework>
     <UserSecretsId>dotnet-ArduinoMonitor.Service-094A03B8-3651-4C4F-9848-B1B894AB3233</UserSecretsId>
   </PropertyGroup>
 
