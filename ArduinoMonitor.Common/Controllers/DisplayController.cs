@@ -2,19 +2,19 @@
 using System.IO.Ports;
 using System.Threading.Tasks;
 using ArduinoMonitor.Common.Enums;
+using ArduinoMonitor.Common.Models;
 using OpenHardwareMonitor.Hardware;
 
 namespace ArduinoMonitor.Common.Controllers
 {
     public static class DisplayController
     {
-        private const string LCD_CLEAR_SYMBOL = "@";
-        private const string LINE_BREAK_SYMBOL = "$";
-
         private const int DISPLAY_DELAY = 2000;
 
         private static bool _isContentBusy;
         private static bool _forceUpdate;
+        
+        public static bool IsDisplayOn { get; set; }
 
         private static SerialPort _port;
 
@@ -30,23 +30,34 @@ namespace ArduinoMonitor.Common.Controllers
         public static void StartDisplay(SerialPort port)
         {
             _port = port;
-
+            _port.Write(IrSymbols.LCD_POWER_CHECK);
             while (true) Display();
         }
 
         public static void ChangeScreen(Screen screen)
         {
+            if (screen == Screen.ChangeVisibility)
+            {
+                ChangeDisplayVisibility();
+                return;
+            }
+
+            if (!IsDisplayOn) return;
+
             if (screen == CurrentScreen) return;
+
             CurrentScreen = screen;
             _forceUpdate = true;
         }
 
         public static void Display(string header, string message)
         {
+            if (!IsDisplayOn) return;
+
             _isContentBusy = true;
 
-            _port.Write(LCD_CLEAR_SYMBOL);
-            _port.Write(header + LINE_BREAK_SYMBOL + message);
+            _port.Write(IrSymbols.LCD_CLEAR);
+            _port.Write(header + IrSymbols.LINE_BREAK + message);
 
             Task.Delay(DISPLAY_DELAY).ContinueWith(x => _isContentBusy = false);
 
@@ -55,7 +66,7 @@ namespace ArduinoMonitor.Common.Controllers
 
         private static void Display()
         {
-            if (_isContentBusy) return;
+            if (_isContentBusy || !IsDisplayOn) return;
 
             if (CurrentScreen.IsFanScreen())
             {
@@ -90,14 +101,21 @@ namespace ArduinoMonitor.Common.Controllers
             Task.Delay(DISPLAY_DELAY).Wait();
         }
 
+        private static void ChangeDisplayVisibility()
+        {
+            IsDisplayOn = !IsDisplayOn;
+            _port.Write(IrSymbols.LCD_CLEAR);
+            _port.Write(IrSymbols.LCD_POWER);
+        }
+
         private static void DisplayBaseScreen()
         {
             var info = SensorController.GetBaseInfo();
 
-            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(IrSymbols.LCD_CLEAR);
             _port.Write(
                 $"GPU:{info.GPU.Temperature}C | {info.GPU.Load}%" +
-                $"{LINE_BREAK_SYMBOL}" +
+                $"{IrSymbols.LINE_BREAK}" +
                 $"CPU:{info.CPU.Temperature}C | {info.CPU.Load}%");
         }
 
@@ -107,10 +125,10 @@ namespace ArduinoMonitor.Common.Controllers
 
             var weather = WeatherController.GetWeather();
 
-            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(IrSymbols.LCD_CLEAR);
             _port.Write(
                 $"T:{weather.Temperature}|H:{weather.Humidity}%|P:{weather.PrecipitationProbability}%" +
-                $"{LINE_BREAK_SYMBOL}" +
+                $"{IrSymbols.LINE_BREAK}" +
                 $"P:{weather.Pressure}mm|W:{weather.Wind}m/s");
         }
 
@@ -119,10 +137,10 @@ namespace ArduinoMonitor.Common.Controllers
         {
             var info = SensorController.GetGpuInfo();
 
-            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(IrSymbols.LCD_CLEAR);
             _port.Write(
                 $"GPU | {info.UsedPercentage}%" +
-                $"{LINE_BREAK_SYMBOL}" +
+                $"{IrSymbols.LINE_BREAK}" +
                 $"M:{info.Memory}MB");
         }
 
@@ -130,10 +148,10 @@ namespace ArduinoMonitor.Common.Controllers
         {
             var info = SensorController.GetCpuInfo();
 
-            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(IrSymbols.LCD_CLEAR);
             _port.Write(
                 $"CPU | {info.UsedPercentage}%" +
-                $"{LINE_BREAK_SYMBOL}" +
+                $"{IrSymbols.LINE_BREAK}" +
                 $"P:{info.Power}W  C:{info.Clock}MHz");
         }
 
@@ -141,10 +159,10 @@ namespace ArduinoMonitor.Common.Controllers
         {
             var info = SensorController.GetRamInfo();
 
-            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(IrSymbols.LCD_CLEAR);
             _port.Write(
                 $"RAM | {info.UsedPercentage}%" +
-                $"{LINE_BREAK_SYMBOL}" +
+                $"{IrSymbols.LINE_BREAK}" +
                 $"A:{info.Available}G  U:{info.Used}G");
         }
 
@@ -171,9 +189,9 @@ namespace ArduinoMonitor.Common.Controllers
 
             fanName += " fan";
 
-            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(IrSymbols.LCD_CLEAR);
             _port.Write(fanName +
-                        $"{LINE_BREAK_SYMBOL}" +
+                        $"{IrSymbols.LINE_BREAK}" +
                         $"{fanInfo.RPM}RPM | P:{fanInfo.Percentage}%");
         }
 
@@ -181,9 +199,9 @@ namespace ArduinoMonitor.Common.Controllers
         {
             var fansInfo = SensorController.GetFrontFansInfo();
 
-            _port.Write(LCD_CLEAR_SYMBOL);
+            _port.Write(IrSymbols.LCD_CLEAR);
             _port.Write("   FRONT FANS  " +
-                        $"{LINE_BREAK_SYMBOL}" +
+                        $"{IrSymbols.LINE_BREAK}" +
                         $"{fansInfo[0].Percentage}% | {fansInfo[1].Percentage}% | {fansInfo[2].Percentage}%");
         }
     }
