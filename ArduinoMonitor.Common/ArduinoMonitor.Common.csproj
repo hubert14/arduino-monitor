@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.33" />
+    <PackageReference Include="InputSimulatorStandard" Version="1.0.0" />
+    <PackageReference Include="System.IO.Ports" Version="5.0.1" />
+    <PackageReference Include="System.Management" Version="5.0.0" />
+    <PackageReference Include="System.Threading.AccessControl" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="OpenHardwareMonitorLib">
+      <HintPath>OpenHardwareMonitorLib.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

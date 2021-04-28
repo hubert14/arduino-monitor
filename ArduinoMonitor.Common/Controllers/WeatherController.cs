@@ -2,7 +2,7 @@
 using System.Net.Http;
 using HtmlAgilityPack;
 
-namespace ArduinoMonitor.Controllers
+namespace ArduinoMonitor.Common.Controllers
 {
     public class WeatherInfo
     {

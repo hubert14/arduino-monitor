@@ -3,7 +3,7 @@ using System.IO.Ports;
 using System.Threading.Tasks;
 using OpenHardwareMonitor.Hardware;
 
-namespace ArduinoMonitor.Controllers
+namespace ArduinoMonitor.Common.Controllers
 {
     public enum Screen
     {

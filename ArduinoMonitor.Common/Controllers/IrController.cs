@@ -1,4 +1,4 @@
-﻿namespace ArduinoMonitor.Controllers
+﻿namespace ArduinoMonitor.Common.Controllers
 {
     public static class IrCommands
     {
@@ -75,37 +75,37 @@
 
                 // NAVIGATION
                 case IrCommands.ZERO_COMMAND:
-                    Program.Display.ChangeScreen(Screen.Base);
+                    MainController.Display.ChangeScreen(Screen.Base);
                     break;
                 case IrCommands.ONE_COMMAND:
-                    Program.Display.ChangeScreen(Screen.GPU);
+                    MainController.Display.ChangeScreen(Screen.GPU);
                     break;
                 case IrCommands.TWO_COMMAND:
-                    Program.Display.ChangeScreen(Screen.CPU);
+                    MainController.Display.ChangeScreen(Screen.CPU);
                     break;
                 case IrCommands.THREE_COMMAND:
-                    Program.Display.ChangeScreen(Screen.RAM);
+                    MainController.Display.ChangeScreen(Screen.RAM);
                     break;
                 case IrCommands.PLUS_100_COMMAND:
-                    Program.Display.ChangeScreen(Screen.Weather);
+                    MainController.Display.ChangeScreen(Screen.Weather);
                     break;
                 case IrCommands.FOUR_COMMAND:
-                    Program.Display.ChangeScreen(Screen.FanCPU);
+                    MainController.Display.ChangeScreen(Screen.FanCPU);
                     break;
                 case IrCommands.FIVE_COMMAND:
-                    Program.Display.ChangeScreen(Screen.FanGPU);
+                    MainController.Display.ChangeScreen(Screen.FanGPU);
                     break;
                 case IrCommands.SIX_COMMAND:
-                    Program.Display.ChangeScreen(Screen.FanRear);
+                    MainController.Display.ChangeScreen(Screen.FanRear);
                     break;
                 case IrCommands.SEVEN_COMMAND:
-                    Program.Display.ChangeScreen(Screen.FanFront1);
+                    MainController.Display.ChangeScreen(Screen.FanFront1);
                     break;
                 case IrCommands.EIGHT_COMMAND:
-                    Program.Display.ChangeScreen(Screen.FanFront2);
+                    MainController.Display.ChangeScreen(Screen.FanFront2);
                     break;
                 case IrCommands.NINE_COMMAND:
-                    Program.Display.ChangeScreen(Screen.FanFront3);
+                    MainController.Display.ChangeScreen(Screen.FanFront3);
                     break;
             }
         }

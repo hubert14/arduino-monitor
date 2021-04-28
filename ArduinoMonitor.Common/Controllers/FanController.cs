@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OpenHardwareMonitor.Hardware;
 
-namespace ArduinoMonitor.Controllers
+namespace ArduinoMonitor.Common.Controllers
 {
     public enum FanType
     {
@@ -50,24 +50,24 @@ namespace ArduinoMonitor.Controllers
             FanType fan;
             try
             {
-                fan = Program.Display.CurrentScreen.GetFanType();
+                fan = MainController.Display.CurrentScreen.GetFanType();
             }
             catch (Exception e)
             {
-                Program.Display.DisplayMessage("ERROR", e.Message.ToUpper());
+                MainController.Display.DisplayMessage("ERROR", e.Message.ToUpper());
                 return;
             }
 
             if (fan == FanType.GPU)
             {
-                var gpu = Program.Computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
+                var gpu = MainController.Computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
                 gpu.Update();
 
                 fanSensor = gpu.Sensors.First(x => x.Identifier.ToString() == GPU_FAN_ID);
             }
             else
             {
-                var mb = Program.Computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
+                var mb = MainController.Computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
                 mb.Update();
                 fanSensor = mb.SubHardware[0].Sensors.First(x => x.Identifier.ToString() == Fans[fan]);
             }
@@ -98,7 +98,7 @@ namespace ArduinoMonitor.Controllers
                     throw new ArgumentOutOfRangeException(nameof(operation), operation, null);
             }
 
-            Program.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
+            MainController.Display.DisplayMessage("FAN CONTROL", $"{outputValue}");
             Console.WriteLine($"FAN CONTROL | {fanSensor.Name} set to {outputValue}");
         }
     }

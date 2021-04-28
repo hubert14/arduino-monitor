@@ -1,13 +1,11 @@
 ﻿using System;
 using System.IO.Ports;
-using ArduinoMonitor.Controllers;
-using OpenHardwareMonitor.Hardware;
-using System.Security.Principal;
 using System.Threading.Tasks;
+using OpenHardwareMonitor.Hardware;
 
-namespace ArduinoMonitor
+namespace ArduinoMonitor.Common.Controllers
 {
-    internal class Program
+    public class MainController
     {
         private const string COM_PORT = "COM5";
         private const int BAUD_RATE = 9600;
@@ -21,21 +19,8 @@ namespace ArduinoMonitor
         public static readonly DisplayController Display = new DisplayController(ArduinoPort, Computer);
         public static readonly IrController IrDecoder = new IrController();
 
-        private static void Main(string[] args)
+        public static void Start()
         {
-            using (var identity = WindowsIdentity.GetCurrent())
-            {
-                var principal = new WindowsPrincipal(identity);
-
-                if (!principal.IsInRole(WindowsBuiltInRole.Administrator))
-                {
-                    Console.WriteLine("To work correctly with sensors, you need administrator rights.\n" +
-                                      "Please, press any keys and open this app with admin rights.");
-                    Console.ReadKey();
-                    return;
-                }
-            }
-
             while (!ArduinoPort.IsOpen)
             {
                 try

@@ -1,7 +1,7 @@
-﻿using WindowsInput;
-using WindowsInput.Native;
+﻿using InputSimulatorStandard;
+using InputSimulatorStandard.Native;
 
-namespace ArduinoMonitor.Controllers
+namespace ArduinoMonitor.Common.Controllers
 {
     public static class MediaController
     {
