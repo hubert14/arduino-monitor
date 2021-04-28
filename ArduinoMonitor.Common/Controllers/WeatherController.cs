@@ -7,7 +7,6 @@ namespace ArduinoMonitor.Common.Controllers
 {
     public static class WeatherController
     {
-        private const int TEMPERATURE_NODE = 2;
         private const int PRESSURE_NODE = 4;
         private const int HUMIDITY_NODE = 5;
         private const int WIND_NODE = 6;
@@ -17,7 +16,8 @@ namespace ArduinoMonitor.Common.Controllers
         {
             var client = new HttpClient();
 
-            var html = client.GetAsync("https://sinoptik.ua/%D0%BF%D0%BE%D0%B3%D0%BE%D0%B4%D0%B0-%D1%85%D0%B0%D1%80%D1%8C%D0%BA%D0%BE%D0%B2")
+            var html = client
+                .GetAsync("https://sinoptik.ua/%D0%BF%D0%BE%D0%B3%D0%BE%D0%B4%D0%B0-%D1%85%D0%B0%D1%80%D1%8C%D0%BA%D0%BE%D0%B2")
                 .Result.Content.ReadAsStringAsync().Result;
 
             var document = new HtmlDocument();
@@ -31,9 +31,14 @@ namespace ArduinoMonitor.Common.Controllers
                     .Replace(" ", ""))
                 .ToList();
 
+            var temperature = document.DocumentNode
+                                  .SelectNodes("//p")
+                                  .First(x => x.HasClass("today-temp"))?
+                                  .InnerText.Replace("&deg;C", "c") ?? "~";
+
             return new WeatherInfo
             {
-                Temperature = values[TEMPERATURE_NODE],
+                Temperature = temperature,
                 Humidity = values[HUMIDITY_NODE],
                 PrecipitationProbability = values[PRECIPITATION_NODE],
                 Pressure = values[PRESSURE_NODE],
