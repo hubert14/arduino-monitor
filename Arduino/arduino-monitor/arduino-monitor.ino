@@ -1,48 +1,64 @@
 #include <Wire.h>
-#include <LiquidCrystal_I2C.h>
+#include <LiquidCrystal_PCF8574.h>
 #include <IRremote.h>
-
 IRrecv irReceiver(4); // 4 - digital port for receive IR signals
-LiquidCrystal_I2C lcd(0x27,16,2);
+LiquidCrystal_PCF8574 lcd(0x27);
 
-// After change this symbols change it on the server application
+// SYMBOLS
 const char LCD_POWER_SYMBOL = '!';
 const char LCD_POWER_CHECK_SYMBOL = '^';
 const char LCD_CLEAR_SYMBOL = '@';
 const char LINE_BREAK_SYMBOL = '$';
 
+// HEADERS
 const String IR_COMMAND_HEADER = "IR_COMMAND";
 const String SCREEN_ON_STATUS_HEADER = "SCREEN_ON_STATUS";
 
-boolean isScreenOn = true;
+// IR
+const String IR_EQ_COMMAND = "F609FF00";
+
+bool _isScreenOn = true;
 
 void setup()
 {
-  Serial.begin(9600); 
+  Wire.begin();
+  Wire.beginTransmission(0x27);
   irReceiver.enableIRIn();
-  lcd.init();
-  lcd.backlight();
+  lcd.begin(16, 2);
+  lcd.setBacklight(1);
+  Serial.begin(9600); 
 }
 
 void loop() {
-  int charCounter = 0;
-  int lineCounter = 0;
+  checkIrReceiver();
+  readFromSerial();
+}
 
+void checkIrReceiver() {
   if (irReceiver.decode()) {
-    Serial.print(IR_COMMAND_HEADER + ":");
-    Serial.println(irReceiver.decodedIRData.decodedRawData, HEX);
+    String decoded = String(irReceiver.decodedIRData.decodedRawData, HEX);
+    decoded.toUpperCase();
+    
+    if(decoded == IR_EQ_COMMAND) 
+      changeLcdPower();
+    
+    sendToSerial(IR_COMMAND_HEADER, decoded);
     irReceiver.resume();
   }
+}
+
+void readFromSerial() {
+  int charCounter = 0;
+  int lineCounter = 0;
+  
   while (Serial.available() > 0) {
     char symbol = Serial.read();
     switch(symbol){
       case LCD_POWER_CHECK_SYMBOL:
-          Serial.println(SCREEN_ON_STATUS_HEADER + ":" + isScreenOn);
+          sendToSerial(SCREEN_ON_STATUS_HEADER, String(_isScreenOn));
           break;
       case LCD_POWER_SYMBOL:
-          isScreenOn = !isScreenOn;
-          if(isScreenOn) lcd.backlight();
-          else lcd.noBacklight();
+          changeLcdPower();
           break;
       case LCD_CLEAR_SYMBOL:
           lcd.clear();
@@ -54,8 +70,25 @@ void loop() {
           charCounter = 0;
           break;
       default:
-          lcd.setCursor(charCounter++, lineCounter); lcd.print(symbol);
+          lcd.setCursor(charCounter++, lineCounter); 
+          lcd.print(symbol);
           break;
     }
   }
-}  
+}
+
+void changeLcdPower() {
+  _isScreenOn = !_isScreenOn;
+  if(_isScreenOn) {
+      lcd.display();
+      lcd.setBacklight(1);
+  } else {
+      lcd.noDisplay();
+      lcd.setBacklight(0);
+  }
+  sendToSerial(SCREEN_ON_STATUS_HEADER,String(_isScreenOn));
+}
+
+void sendToSerial(String header, String command) {
+  Serial.println(header + ":" + command);
+}

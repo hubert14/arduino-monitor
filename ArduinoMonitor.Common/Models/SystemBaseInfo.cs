@@ -4,8 +4,8 @@
     {
         public class HardwareBaseInfo
         {
-            public string Load { get; set; }
-            public string Temperature { get; set; }
+            public float? Load { get; set; }
+            public float? Temperature { get; set; }
         }
 
         public HardwareBaseInfo GPU { get; set; }

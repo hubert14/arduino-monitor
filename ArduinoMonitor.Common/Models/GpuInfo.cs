@@ -2,7 +2,9 @@
 {
     public class GpuInfo
     {
-        public string UsedPercentage { get; set; }
-        public string Memory { get; set; }
+        public float? UsedPercentage { get; set; }
+        public float? Temperature { get; set; }
+        public float? Power { get; set; }
+        public float? Memory { get; set; }
     }
 }

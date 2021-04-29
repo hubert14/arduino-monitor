@@ -1,9 +1,8 @@
 ﻿using System;
-using System.IO.Ports;
+using System.Linq;
 using System.Threading.Tasks;
+using ArduinoMonitor.Common.Constants;
 using ArduinoMonitor.Common.Enums;
-using ArduinoMonitor.Common.Models;
-using OpenHardwareMonitor.Hardware;
 
 namespace ArduinoMonitor.Common.Controllers
 {
@@ -13,54 +12,61 @@ namespace ArduinoMonitor.Common.Controllers
 
         private static bool _isContentBusy;
         private static bool _forceUpdate;
-        
+
+        private static Screen PreviousScreen { get; set; }
+        public static Screen CurrentScreen { get; set; }
+
         public static bool IsDisplayOn { get; set; }
 
-        private static SerialPort _port;
+        private static readonly Screen[] ImmutableScreens =
+        {
+            Screen.Weather
+        };
 
         static DisplayController()
         {
             CurrentScreen = Screen.Base;
 
-            IrController.Display += ChangeScreen;
+            IrController.ScreenChangeReceived += ChangeScreen;
+            SerialController.DisplayStatusChanged += ChangeDisplayStatus;
         }
 
-        public static Screen CurrentScreen { get; set; }
-
-        public static void StartDisplay(SerialPort port)
+        public static void Init()
         {
-            _port = port;
-            _port.Write(IrSymbols.LCD_POWER_CHECK);
-            while (true) Display();
-        }
+            SerialController.WriteToSerial(DeviceSymbols.LCD_POWER_CHECK);
 
-        public static void ChangeScreen(Screen screen)
-        {
-            if (screen == Screen.ChangeVisibility)
+            while (true)
             {
-                ChangeDisplayVisibility();
-                return;
+                Display();
+            }
+        }
+
+        public static void Display(string firstLine, string secondLine, bool isLongMessage = false)
+        {
+            if (!IsDisplayOn) return;
+
+            if (isLongMessage)
+            {
+                _isContentBusy = true;
+
+                Task.Delay(DISPLAY_DELAY).ContinueWith(x => _isContentBusy = false);
+
+                _forceUpdate = true;
             }
 
-            if (!IsDisplayOn) return;
-
-            if (screen == CurrentScreen) return;
-
-            CurrentScreen = screen;
-            _forceUpdate = true;
+            ClearScreen();
+            SerialController.WriteToSerial(firstLine.ToUpper() + DeviceSymbols.LINE_BREAK + secondLine.ToUpper());
         }
 
-        public static void Display(string header, string message)
+        private static void ChangeDisplayStatus(bool visible) => IsDisplayOn = visible;
+
+        private static void ChangeScreen(Screen screen)
         {
             if (!IsDisplayOn) return;
+            if (screen == CurrentScreen) return;
 
-            _isContentBusy = true;
-
-            _port.Write(IrSymbols.LCD_CLEAR);
-            _port.Write(header + IrSymbols.LINE_BREAK + message);
-
-            Task.Delay(DISPLAY_DELAY).ContinueWith(x => _isContentBusy = false);
-
+            PreviousScreen = CurrentScreen;
+            CurrentScreen = screen;
             _forceUpdate = true;
         }
 
@@ -68,55 +74,58 @@ namespace ArduinoMonitor.Common.Controllers
         {
             if (_isContentBusy || !IsDisplayOn) return;
 
-            if (CurrentScreen.IsFanScreen())
+            if (!_forceUpdate && ImmutableScreens.All(s => s != CurrentScreen))
+                ClearScreen();
+
+            try
             {
-                if (CurrentScreen == Screen.FrontFans) DisplayFrontFansScreen();
-                else DisplayFanScreen(CurrentScreen.GetFanType());
-            }
-            else
-            {
-                switch (CurrentScreen)
+                if (CurrentScreen.IsFanScreen())
                 {
-                    case Screen.Base:
-                        DisplayBaseScreen();
-                        break;
-                    case Screen.GPU:
-                        DisplayGpuScreen();
-                        break;
-                    case Screen.CPU:
-                        DisplayCpuScreen();
-                        break;
-                    case Screen.RAM:
-                        DisplayRamScreen();
-                        break;
-                    case Screen.Weather:
-                        DisplayWeatherScreen();
-                        _forceUpdate = false;
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(CurrentScreen), CurrentScreen, null);
+                    if (CurrentScreen == Screen.FrontFans) DisplayFrontFansScreen();
+                    else DisplayFanScreen(CurrentScreen.GetFanType());
                 }
+                else
+                {
+                    switch (CurrentScreen)
+                    {
+                        case Screen.Base:
+                            DisplayBaseScreen();
+                            break;
+                        case Screen.GPU:
+                            DisplayGpuScreen();
+                            break;
+                        case Screen.CPU:
+                            DisplayCpuScreen();
+                            break;
+                        case Screen.RAM:
+                            DisplayRamScreen();
+                            break;
+                        case Screen.Weather:
+                            DisplayWeatherScreen();
+                            _forceUpdate = false;
+                            break;
+                        default:
+                            throw new ArgumentOutOfRangeException(nameof(CurrentScreen), CurrentScreen, null);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Display("Error", e.Message, true);
+                ChangeScreen(PreviousScreen);
             }
 
             Task.Delay(DISPLAY_DELAY).Wait();
-        }
-
-        private static void ChangeDisplayVisibility()
-        {
-            IsDisplayOn = !IsDisplayOn;
-            _port.Write(IrSymbols.LCD_CLEAR);
-            _port.Write(IrSymbols.LCD_POWER);
         }
 
         private static void DisplayBaseScreen()
         {
             var info = SensorController.GetBaseInfo();
 
-            _port.Write(IrSymbols.LCD_CLEAR);
-            _port.Write(
-                $"GPU:{info.GPU.Temperature}C | {info.GPU.Load}%" +
-                $"{IrSymbols.LINE_BREAK}" +
-                $"CPU:{info.CPU.Temperature}C | {info.CPU.Load}%");
+            Display(
+                $"GPU:{GetString(info.GPU.Temperature, "0", "C")} | {GetString(info.GPU.Load, "0.##", "%")}",
+                $"CPU:{GetString(info.CPU.Temperature, "0", "C")} | {GetString(info.CPU.Load, "0.##", "%")}"
+            );
         }
 
         private static void DisplayWeatherScreen()
@@ -125,45 +134,40 @@ namespace ArduinoMonitor.Common.Controllers
 
             var weather = WeatherController.GetWeather();
 
-            _port.Write(IrSymbols.LCD_CLEAR);
-            _port.Write(
-                $"T:{weather.Temperature}|H:{weather.Humidity}%|P:{weather.PrecipitationProbability}%" +
-                $"{IrSymbols.LINE_BREAK}" +
-                $"P:{weather.Pressure}mm|W:{weather.Wind}m/s");
+            Display(
+                $"T:{weather.Temperature}|H:{weather.Humidity}%|P:{weather.PrecipitationProbability}%",
+                $"P:{weather.Pressure}mm|W:{weather.Wind}m/s"
+            );
         }
-
 
         private static void DisplayGpuScreen()
         {
             var info = SensorController.GetGpuInfo();
 
-            _port.Write(IrSymbols.LCD_CLEAR);
-            _port.Write(
-                $"GPU | {info.UsedPercentage}%" +
-                $"{IrSymbols.LINE_BREAK}" +
-                $"M:{info.Memory}MB");
+            Display(
+                $"GPU|{GetString(info.UsedPercentage, "0.0", "%")}|{GetString(info.Temperature, "0.0", "C")}",
+                $"P:{GetString(info.Power, "0", "W")}  M:{GetString(info.Memory, "0", "MB")}"
+            );
         }
 
         private static void DisplayCpuScreen()
         {
             var info = SensorController.GetCpuInfo();
 
-            _port.Write(IrSymbols.LCD_CLEAR);
-            _port.Write(
-                $"CPU | {info.UsedPercentage}%" +
-                $"{IrSymbols.LINE_BREAK}" +
-                $"P:{info.Power}W  C:{info.Clock}MHz");
+            Display(
+                $"CPU|{GetString(info.UsedPercentage, "0.0", "%")}|{GetString(info.Temperature, "0.0", "C")}",
+                $"P:{GetString(info.Power, "0", "W")}  C:{GetString(info.Clock, "0", "MHZ")}"
+            );
         }
 
         private static void DisplayRamScreen()
         {
             var info = SensorController.GetRamInfo();
 
-            _port.Write(IrSymbols.LCD_CLEAR);
-            _port.Write(
-                $"RAM | {info.UsedPercentage}%" +
-                $"{IrSymbols.LINE_BREAK}" +
-                $"A:{info.Available}G  U:{info.Used}G");
+            Display(
+                $"RAM | {GetString(info.UsedPercentage, "0.0", "%")}",
+                $"A:{GetString(info.Available, "0.0", "G")}  U:{GetString(info.Used, "0.0", "G")}"
+            );
         }
 
         private static void DisplayFanScreen(FanType fan)
@@ -189,20 +193,27 @@ namespace ArduinoMonitor.Common.Controllers
 
             fanName += " fan";
 
-            _port.Write(IrSymbols.LCD_CLEAR);
-            _port.Write(fanName +
-                        $"{IrSymbols.LINE_BREAK}" +
-                        $"{fanInfo.RPM}RPM | P:{fanInfo.Percentage}%");
+            Display(
+                fanName,
+                $"{GetString(fanInfo.RPM, "0", "RPM")} | P:{GetString(fanInfo.Percentage, "0", "%")}"
+            );
         }
 
         private static void DisplayFrontFansScreen()
         {
             var fansInfo = SensorController.GetFrontFansInfo();
 
-            _port.Write(IrSymbols.LCD_CLEAR);
-            _port.Write("   FRONT FANS  " +
-                        $"{IrSymbols.LINE_BREAK}" +
-                        $"{fansInfo[0].Percentage}% | {fansInfo[1].Percentage}% | {fansInfo[2].Percentage}%");
+            Display(
+                "   FRONT FANS  ",
+                $"{GetString(fansInfo[0].Percentage, "0", "%")} | " +
+                $"{GetString(fansInfo[1].Percentage, "0", "%")} | " +
+                $"{GetString(fansInfo[2].Percentage, "0", "%")}"
+            );
         }
+
+        private static string GetString(float? value, string format, string symbol = "") =>
+            (value?.ToString(format) ?? "~") + symbol;
+
+        private static void ClearScreen() => SerialController.WriteToSerial(DeviceSymbols.LCD_CLEAR);
     }
 }

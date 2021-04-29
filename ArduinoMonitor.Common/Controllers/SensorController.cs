@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ArduinoMonitor.Common.Constants;
 using ArduinoMonitor.Common.Enums;
 using ArduinoMonitor.Common.Models;
 using OpenHardwareMonitor.Hardware;
@@ -9,60 +10,18 @@ namespace ArduinoMonitor.Common.Controllers
 {
     public static class SensorController
     {
-        #region Identifiers
-
-        // GPU
-        private const string GPU_MEMORY = "/nvidiagpu/0/smalldata/2";
-        const string GPU_CORE = "/nvidiagpu/0/load/0";
-        const string GPU_TEMP = "/nvidiagpu/0/temperature/0";
-
-        // CPU
-        private const string CPU_POWER = "/amdcpu/0/power/0";
-        private const string CPU_CLOCK = "/amdcpu/0/clock/1";
-        private const string CPU_CORE = "/amdcpu/0/load/0";
-        const string CPU_TEMP = "/amdcpu/0/temperature/0";
-
-        // RAM
-        private const string RAM_USED = "/ram/data/0";
-        private const string RAM_AVAILABLE = "/ram/data/1";
-
-        // FANS
-        private const string GPU_FAN_RPM = "/nvidiagpu/0/fan/0";
-        private const string GPU_FAN_PERCENTAGE = "/nvidiagpu/0/control/0";
-
-        private const string CPU_FAN_RPM = "/lpc/nct6795d/fan/1";
-        private const string CPU_FAN_PERCENTAGE = "/lpc/nct6795d/control/1";
-
-        private const string FRONT1_FAN_RPM = "/lpc/nct6795d/fan/0";
-        private const string FRONT1_FAN_PERCENTAGE = "/lpc/nct6795d/control/0";
-
-        private const string FRONT2_FAN_RPM = "/lpc/nct6795d/fan/4";
-        private const string FRONT2_FAN_PERCENTAGE = "/lpc/nct6795d/control/4";
-
-        private const string FRONT3_FAN_RPM = "/lpc/nct6795d/fan/5";
-        private const string FRONT3_FAN_PERCENTAGE = "/lpc/nct6795d/control/5";
-
-        private const string REAR_FAN_RPM = "/lpc/nct6795d/fan/2";
-        private const string REAR_FAN_PERCENTAGE = "/lpc/nct6795d/control/2";
-
-        #endregion
-
-        private const string PERCENTAGE_FORMAT = "###.#";
-        private const string RPM_FORMAT = "####";
-        
         private static IComputer _computer;
 
         public static void Init(IComputer computer) => _computer = computer;
 
-
         private static readonly List<(FanType Type, string RPMId, string PercId)> MotherboardFans =
             new List<(FanType Fan, string RPMId, string PercentageId)>
             {
-                (FanType.CPU, CPU_FAN_RPM, CPU_FAN_PERCENTAGE),
-                (FanType.Front1, FRONT1_FAN_RPM, FRONT1_FAN_PERCENTAGE),
-                (FanType.Front2, FRONT2_FAN_RPM, FRONT2_FAN_PERCENTAGE),
-                (FanType.Front3, FRONT3_FAN_RPM, FRONT3_FAN_PERCENTAGE),
-                (FanType.Rear, REAR_FAN_RPM, REAR_FAN_PERCENTAGE),
+                (FanType.CPU, HardwareIdentifiers.CPU_FAN_RPM, HardwareIdentifiers.CPU_FAN_PERCENTAGE),
+                (FanType.Front1, HardwareIdentifiers.FRONT1_FAN_RPM, HardwareIdentifiers.FRONT1_FAN_PERCENTAGE),
+                (FanType.Front2, HardwareIdentifiers.FRONT2_FAN_RPM, HardwareIdentifiers.FRONT2_FAN_PERCENTAGE),
+                (FanType.Front3, HardwareIdentifiers.FRONT3_FAN_RPM, HardwareIdentifiers.FRONT3_FAN_PERCENTAGE),
+                (FanType.Rear, HardwareIdentifiers.REAR_FAN_RPM, HardwareIdentifiers.REAR_FAN_PERCENTAGE),
             };
 
         public static List<FanItem> GetFansInfo()
@@ -77,11 +36,9 @@ namespace ArduinoMonitor.Common.Controllers
             var resultFansList = MotherboardFans.Select(fan =>
             {
                 var rpm =
-                    subMainboard.Sensors.First(x => x.Identifier.ToString() == fan.RPMId).Value?.ToString(RPM_FORMAT) ??
-                    "~";
+                    subMainboard.Sensors.First(x => x.Identifier.ToString() == fan.RPMId).Value;
                 var percentage =
-                    subMainboard.Sensors.First(x => x.Identifier.ToString() == fan.PercId).Value?.ToString(PERCENTAGE_FORMAT) ??
-                    "~";
+                    subMainboard.Sensors.First(x => x.Identifier.ToString() == fan.PercId).Value;
 
                 return new FanItem(fan.Type) {Percentage = percentage, RPM = rpm};
             }).ToList();
@@ -91,11 +48,11 @@ namespace ArduinoMonitor.Common.Controllers
             foreach (var sensor in gpu.Sensors)
                 switch (sensor.Identifier.ToString())
                 {
-                    case GPU_FAN_RPM:
-                        gpuItem.RPM = sensor.Value?.ToString(RPM_FORMAT) ?? "~";
+                    case HardwareIdentifiers.GPU_FAN_RPM:
+                        gpuItem.RPM = sensor.Value;
                         break;
-                    case GPU_FAN_PERCENTAGE:
-                        gpuItem.Percentage = sensor.Value?.ToString(PERCENTAGE_FORMAT) ?? "~";
+                    case HardwareIdentifiers.GPU_FAN_PERCENTAGE:
+                        gpuItem.Percentage = sensor.Value;
                         break;
                 }
 
@@ -114,9 +71,8 @@ namespace ArduinoMonitor.Common.Controllers
                     x.Type == FanType.Front1 || x.Type == FanType.Front2 || x.Type == FanType.Front3)
                 .Select(f => new FanItem(f.Type)
                 {
-                    RPM = subMainBoard.Sensors.First(x => x.Identifier.ToString() == f.RPMId).Value?.ToString(RPM_FORMAT),
+                    RPM = subMainBoard.Sensors.First(x => x.Identifier.ToString() == f.RPMId).Value,
                     Percentage = subMainBoard.Sensors.First(x => x.Identifier.ToString() == f.PercId).Value
-                        ?.ToString("###"),
                 }).ToList();
         }
 
@@ -132,11 +88,11 @@ namespace ArduinoMonitor.Common.Controllers
                 foreach (var sensor in gpu.Sensors)
                     switch (sensor.Identifier.ToString())
                     {
-                        case GPU_FAN_RPM:
-                            gpuItem.RPM = sensor.Value?.ToString(RPM_FORMAT) ?? "~";
+                        case HardwareIdentifiers.GPU_FAN_RPM:
+                            gpuItem.RPM = sensor.Value;
                             break;
-                        case GPU_FAN_PERCENTAGE:
-                            gpuItem.Percentage = sensor.Value?.ToString(PERCENTAGE_FORMAT) ?? "~";
+                        case HardwareIdentifiers.GPU_FAN_PERCENTAGE:
+                            gpuItem.Percentage = sensor.Value;
                             break;
                     }
 
@@ -152,9 +108,8 @@ namespace ArduinoMonitor.Common.Controllers
 
             return new FanItem(type)
             {
-                RPM = subMainBoard.Sensors.First(x => x.Identifier.ToString() == fanItem.RPMId).Value?.ToString(RPM_FORMAT),
+                RPM = subMainBoard.Sensors.First(x => x.Identifier.ToString() == fanItem.RPMId).Value,
                 Percentage = subMainBoard.Sensors.First(x => x.Identifier.ToString() == fanItem.PercId).Value
-                    ?.ToString(PERCENTAGE_FORMAT)
             };
         }
 
@@ -168,11 +123,17 @@ namespace ArduinoMonitor.Common.Controllers
             foreach (var sensor in gpu.Sensors)
                 switch (sensor.Identifier.ToString())
                 {
-                    case GPU_CORE:
-                        result.UsedPercentage = sensor.Value?.ToString(PERCENTAGE_FORMAT) ?? "~";
+                    case HardwareIdentifiers.GPU_TEMP:
+                        result.Temperature = sensor.Value;
                         break;
-                    case GPU_MEMORY:
-                        result.Memory = sensor.Value?.ToString(RPM_FORMAT) ?? "~";
+                    case HardwareIdentifiers.GPU_POWER:
+                        result.Power = sensor.Value;
+                        break;
+                    case HardwareIdentifiers.GPU_CORE:
+                        result.UsedPercentage = sensor.Value;
+                        break;
+                    case HardwareIdentifiers.GPU_MEMORY:
+                        result.Memory = sensor.Value;
                         break;
                 }
 
@@ -195,14 +156,17 @@ namespace ArduinoMonitor.Common.Controllers
             foreach (var sensor in cpu.Sensors)
                 switch (sensor.Identifier.ToString())
                 {
-                    case CPU_CORE:
-                        result.UsedPercentage = sensor.Value?.ToString(PERCENTAGE_FORMAT) ?? "~";
+                    case HardwareIdentifiers.CPU_TEMP:
+                        result.Temperature = sensor.Value;
                         break;
-                    case CPU_POWER:
-                        result.Power = sensor.Value?.ToString(RPM_FORMAT) ?? "~";
+                    case HardwareIdentifiers.CPU_CORE:
+                        result.UsedPercentage = sensor.Value;
                         break;
-                    case CPU_CLOCK:
-                        result.Clock = sensor.Value?.ToString(RPM_FORMAT) ?? "~";
+                    case HardwareIdentifiers.CPU_POWER:
+                        result.Power = sensor.Value;
+                        break;
+                    case HardwareIdentifiers.CPU_CLOCK:
+                        result.Clock = sensor.Value;
                         break;
                 }
 
@@ -219,18 +183,15 @@ namespace ArduinoMonitor.Common.Controllers
             foreach (var sensor in ram.Sensors)
                 switch (sensor.Identifier.ToString())
                 {
-                    case RAM_USED:
-                        result.Used = sensor.Value?.ToString(PERCENTAGE_FORMAT) ?? "~";
+                    case HardwareIdentifiers.RAM_USED:
+                        result.Used = sensor.Value;
                         break;
-                    case RAM_AVAILABLE:
-                        result.Available = sensor.Value?.ToString(PERCENTAGE_FORMAT) ?? "~";
+                    case HardwareIdentifiers.RAM_AVAILABLE:
+                        result.Available = sensor.Value;
                         break;
                 }
 
-            result.UsedPercentage = ((float.Parse(result.Used) * 100) / (float.Parse(result.Used) +
-                                                                         float.Parse(result.Available)))
-                .ToString("##.#");
-
+            result.UsedPercentage = (result.Used * 100) / (result.Used + result.Available);
             return result;
         }
 
@@ -258,9 +219,9 @@ namespace ArduinoMonitor.Common.Controllers
 
             foreach (var sensor in hardware.Sensors)
                 if (sensor.Identifier.ToString() == identifiers.Temp)
-                    result.Temperature = sensor.Value?.ToString("##") ?? "~";
+                    result.Temperature = sensor.Value;
                 else if (sensor.Identifier.ToString() == identifiers.Load)
-                    result.Load = sensor.Value?.ToString(PERCENTAGE_FORMAT) ?? "~";
+                    result.Load = sensor.Value;
 
             return result;
         }
@@ -270,9 +231,9 @@ namespace ArduinoMonitor.Common.Controllers
             switch (type)
             {
                 case HardwareType.GpuNvidia:
-                    return (GPU_CORE, GPU_TEMP);
+                    return (HardwareIdentifiers.GPU_CORE, HardwareIdentifiers.GPU_TEMP);
                 case HardwareType.CPU:
-                    return (CPU_CORE, CPU_TEMP);
+                    return (HardwareIdentifiers.CPU_CORE, HardwareIdentifiers.CPU_TEMP);
                 default:
                     throw new Exception("Hardware type not supported");
             }

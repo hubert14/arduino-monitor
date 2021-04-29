@@ -2,8 +2,8 @@
 {
     public class RamInfo
     {
-        public string UsedPercentage { get; set; }
-        public string Used { get; set; }
-        public string Available { get; set; }
+        public float? UsedPercentage { get; set; }
+        public float? Used { get; set; }
+        public float? Available { get; set; }
     }
 }

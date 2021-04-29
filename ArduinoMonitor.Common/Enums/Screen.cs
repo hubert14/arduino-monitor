@@ -4,7 +4,6 @@ namespace ArduinoMonitor.Common.Enums
 {
     public enum Screen
     {
-        ChangeVisibility,
         Base,
         GPU,
         CPU,

@@ -1,5 +1,4 @@
-﻿using ArduinoMonitor.Common.Controllers;
-using ArduinoMonitor.Common.Enums;
+﻿using ArduinoMonitor.Common.Enums;
 
 namespace ArduinoMonitor.Common
 {
@@ -7,5 +6,9 @@ namespace ArduinoMonitor.Common
 
     public delegate void FanHandler(FanOperation operation);
 
-    public delegate void DisplayHandler(Screen screen);
+    public delegate void ScreenHandler(Screen screen);
+
+    public delegate void IrCommandHandler(string command);
+
+    public delegate void DisplayStatusHandler(bool visible);
 }

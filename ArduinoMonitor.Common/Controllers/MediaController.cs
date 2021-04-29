@@ -7,7 +7,7 @@ namespace ArduinoMonitor.Common.Controllers
 {
     public static class MediaController
     {
-        static MediaController() => IrController.Media += HandleOperation;
+        static MediaController() => IrController.MediaChangeReceived += HandleOperation;
 
         /// <summary>
         /// Need for reference to media controller

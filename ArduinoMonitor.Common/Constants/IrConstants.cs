@@ -1,4 +1,4 @@
-﻿namespace ArduinoMonitor.Common.Models
+﻿namespace ArduinoMonitor.Common.Constants
 {
     public static class IrCommands
     {
@@ -29,17 +29,5 @@
         public const string NEXT = "BF40FF00";
     }
 
-    public static class IrHeaders
-    {
-        public const string SCREEN_ON_STATUS = "SCREEN_ON_STATUS";
-        public const string IR_COMMAND = "IR_COMMAND";
-    }
 
-    public static class IrSymbols
-    {
-        public const string LCD_POWER_CHECK = "^";
-        public const string LCD_POWER = "!";
-        public const string LCD_CLEAR = "@";
-        public const string LINE_BREAK = "$";
-    }
 }

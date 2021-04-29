@@ -6,8 +6,8 @@ namespace ArduinoMonitor.Common.Models
     {
         public FanType Fan { get; }
 
-        public string RPM { get; set; }
-        public string Percentage { get; set; }
+        public float? RPM { get; set; }
+        public float? Percentage { get; set; }
 
         public FanItem(FanType fan) => Fan = fan;
     }

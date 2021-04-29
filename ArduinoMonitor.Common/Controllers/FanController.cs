@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using ArduinoMonitor.Common.Constants;
 using ArduinoMonitor.Common.Enums;
 using OpenHardwareMonitor.Hardware;
 
@@ -10,27 +11,20 @@ namespace ArduinoMonitor.Common.Controllers
     {
         private static IComputer _computer;
 
-        static FanController() => IrController.Fan += ChangeFan;
+        static FanController() => IrController.FanChangeReceived += ChangeFan;
 
         public static void Init(IComputer computer) => _computer = computer;
 
         private const float FAN_STEP = 10;
 
-        private const string GPU_FAN_ID = "/nvidiagpu/0/control/0";
-        private const string CPU_FAN_ID = "/lpc/nct6795d/control/1";
-        private const string FRONT1_FAN_ID = "/lpc/nct6795d/control/0";
-        private const string FRONT2_FAN_ID = "/lpc/nct6795d/control/4";
-        private const string FRONT3_FAN_ID = "/lpc/nct6795d/control/5";
-        private const string REAR_FAN_ID = "/lpc/nct6795d/control/2";
-
         private static readonly Dictionary<FanType, string> Fans = new Dictionary<FanType, string>
         {
-            {FanType.CPU, CPU_FAN_ID},
-            {FanType.GPU, GPU_FAN_ID},
-            {FanType.Front1, FRONT1_FAN_ID},
-            {FanType.Front2, FRONT2_FAN_ID},
-            {FanType.Front3, FRONT3_FAN_ID},
-            {FanType.Rear, REAR_FAN_ID}
+            {FanType.CPU, HardwareIdentifiers.CPU_FAN_PERCENTAGE},
+            {FanType.GPU, HardwareIdentifiers.GPU_FAN_PERCENTAGE},
+            {FanType.Front1, HardwareIdentifiers.FRONT1_FAN_PERCENTAGE},
+            {FanType.Front2, HardwareIdentifiers.FRONT2_FAN_PERCENTAGE},
+            {FanType.Front3, HardwareIdentifiers.FRONT3_FAN_PERCENTAGE},
+            {FanType.Rear, HardwareIdentifiers.REAR_FAN_PERCENTAGE}
         };
 
         public static void ChangeFan(FanOperation operation)
@@ -42,15 +36,18 @@ namespace ArduinoMonitor.Common.Controllers
             {
                 var mb = _computer.Hardware.First(x => x.HardwareType == HardwareType.Mainboard);
                 mb.Update();
-                var fans = mb.SubHardware[0].Sensors.Where(x => x.Identifier.ToString() == FRONT1_FAN_ID ||
-                                                                x.Identifier.ToString() == FRONT2_FAN_ID ||
-                                                                x.Identifier.ToString() == FRONT3_FAN_ID).ToList();
+                var fans = mb.SubHardware[0].Sensors
+                    .Where(x =>
+                        x.Identifier.ToString() == HardwareIdentifiers.FRONT1_FAN_PERCENTAGE ||
+                        x.Identifier.ToString() == HardwareIdentifiers.FRONT2_FAN_PERCENTAGE ||
+                        x.Identifier.ToString() == HardwareIdentifiers.FRONT3_FAN_PERCENTAGE)
+                    .ToList();
 
                 var minValue = fans.Min(x => x.Value) ?? 50;
 
                 fans.ForEach(x => outputValue = ChangeFan(x, minValue, operation));
 
-                DisplayController.Display("FAN CONTROL", $"{outputValue}");
+                DisplayController.Display("Fan control", $"{outputValue}", true);
                 return;
             }
 
@@ -61,7 +58,7 @@ namespace ArduinoMonitor.Common.Controllers
             }
             catch (Exception e)
             {
-                DisplayController.Display("ERROR", e.Message.ToUpper());
+                DisplayController.Display("Error", e.Message, true);
                 return;
             }
 
@@ -70,7 +67,7 @@ namespace ArduinoMonitor.Common.Controllers
                 var gpu = _computer.Hardware.First(x => x.HardwareType == HardwareType.GpuNvidia);
                 gpu.Update();
 
-                fanSensor = gpu.Sensors.First(x => x.Identifier.ToString() == GPU_FAN_ID);
+                fanSensor = gpu.Sensors.First(x => x.Identifier.ToString() == HardwareIdentifiers.GPU_FAN_PERCENTAGE);
             }
             else
             {
@@ -82,7 +79,7 @@ namespace ArduinoMonitor.Common.Controllers
             var value = fanSensor.Value.GetValueOrDefault(50);
             outputValue = ChangeFan(fanSensor, value, operation);
 
-            DisplayController.Display("FAN CONTROL", $"{outputValue}");
+            DisplayController.Display("Fan control", $"{outputValue}", true);
         }
 
         private static string ChangeFan(ISensor fan, float value, FanOperation operation)
@@ -95,13 +92,13 @@ namespace ArduinoMonitor.Common.Controllers
                 case FanOperation.Up:
                     resultValue += FAN_STEP;
                     if (resultValue > 100) resultValue = 100;
-                    outputValue = resultValue.ToString("###") + "%";
+                    outputValue = resultValue.ToString("##0") + "%";
                     fan.Control.SetSoftware(resultValue);
                     break;
                 case FanOperation.Down:
                     resultValue -= FAN_STEP;
                     if (resultValue < 0) resultValue = 0;
-                    outputValue = resultValue.ToString("###") + "%";
+                    outputValue = resultValue.ToString("##0") + "%";
                     fan.Control.SetSoftware(resultValue);
                     break;
                 case FanOperation.Default:
